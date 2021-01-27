@@ -363,7 +363,7 @@ TextLabel.TextWrapped = true
 
 -- Scripts:
 
-local function POSA_fake_script() -- cbro.LocalScript 
+local function XXXC_fake_script() -- cbro.LocalScript 
 	local script = Instance.new('LocalScript', cbro)
 
 	function Leftclick()
@@ -402,8 +402,8 @@ local function POSA_fake_script() -- cbro.LocalScript
 	
 	script.Parent.MouseButton1Click:Connect(Leftclick)
 end
-coroutine.wrap(POSA_fake_script)()
-local function CEPWDV_fake_script() -- Loader.LocalScript 
+coroutine.wrap(XXXC_fake_script)()
+local function NCHYG_fake_script() -- Loader.Drag 
 	local script = Instance.new('LocalScript', Loader)
 
 	script.Parent.Main.Active = true
@@ -413,8 +413,8 @@ local function CEPWDV_fake_script() -- Loader.LocalScript
 	script.Parent.Login.Selectable = true
 	script.Parent.Login.Draggable = true
 end
-coroutine.wrap(CEPWDV_fake_script)()
-local function UZWQ_fake_script() -- Enter.LocalScript 
+coroutine.wrap(NCHYG_fake_script)()
+local function LAIM_fake_script() -- Enter.LocalScript 
 	local script = Instance.new('LocalScript', Enter)
 
 	script.Parent.MouseButton1Click:Connect(function()
@@ -432,9 +432,9 @@ local function UZWQ_fake_script() -- Enter.LocalScript
 		
 	end)
 end
-coroutine.wrap(UZWQ_fake_script)()
-local function OEFRLTC_fake_script() -- Loader.LocalScript 
-	local script = Instance.new('LocalScript', Loader)
+coroutine.wrap(LAIM_fake_script)()
+local function HAJFTJO_fake_script() -- Loader.Key system 
+	local script = Instance.new('Script', Loader)
 
 	if Key == ("nn") then
 		script.Parent.Login.Visible = true
@@ -442,4 +442,4 @@ local function OEFRLTC_fake_script() -- Loader.LocalScript
 		game.Players.LocalPlayer:kick("Wrong key")
 	end
 end
-coroutine.wrap(OEFRLTC_fake_script)()
+coroutine.wrap(HAJFTJO_fake_script)()
