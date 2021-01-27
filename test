@@ -1,0 +1,3 @@
+if Key == ("ha") then
+	game.Players.LocalPlayer:kick("lol it works")
+end
