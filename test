@@ -1,3 +1,445 @@
-if Key == ("ha") then
-	game.Players.LocalPlayer:kick("lol it works")
+-- Gui to Lua
+-- Version: 3.2
+
+-- Instances:
+
+local Loader = Instance.new("ScreenGui")
+local Main = Instance.new("Frame")
+local titleframe = Instance.new("Frame")
+local Title = Instance.new("TextButton")
+local looks = Instance.new("ImageLabel")
+local cbro = Instance.new("TextButton")
+local TextButton_Roundify_12px = Instance.new("ImageLabel")
+local PhantomForces = Instance.new("TextButton")
+local TextButton_Roundify_12px_2 = Instance.new("ImageLabel")
+local RainbowLine = Instance.new("ImageLabel")
+local Loading1 = Instance.new("Frame")
+local loadingpleasewait = Instance.new("TextLabel")
+local loadingpleasewait_Roundify_12px = Instance.new("ImageLabel")
+local Loading2 = Instance.new("Frame")
+local loadingpleasewait_2 = Instance.new("TextLabel")
+local loadingpleasewait_Roundify_12px_2 = Instance.new("ImageLabel")
+local Loading3 = Instance.new("Frame")
+local loadingpleasewait_3 = Instance.new("TextLabel")
+local loadingpleasewait_Roundify_12px_3 = Instance.new("ImageLabel")
+local Pic = Instance.new("ImageLabel")
+local Login = Instance.new("Frame")
+local Top = Instance.new("Frame")
+local Bottom = Instance.new("Frame")
+local Login_2 = Instance.new("TextLabel")
+local Loginbox = Instance.new("TextBox")
+local Enter = Instance.new("TextButton")
+local Enter_Roundify_12px = Instance.new("ImageLabel")
+local Loginloading = Instance.new("Frame")
+local TextLabel = Instance.new("TextLabel")
+
+--Properties:
+
+Loader.Name = "Loader"
+Loader.Parent = game.CoreGui
+
+Main.Name = "Main"
+Main.Parent = Loader
+Main.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Main.BorderSizePixel = 0
+Main.Position = UDim2.new(0.279582381, 0, 0.27893737, 0)
+Main.Size = UDim2.new(0, 413, 0, 232)
+Main.Visible = false
+
+titleframe.Name = "title frame"
+titleframe.Parent = Main
+titleframe.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+titleframe.BorderSizePixel = 0
+titleframe.Size = UDim2.new(0, 413, 0, 58)
+titleframe.ZIndex = 2
+
+Title.Name = "Title"
+Title.Parent = Main
+Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundTransparency = 1.000
+Title.Position = UDim2.new(0.322033882, 0, 0.0474137925, 0)
+Title.Size = UDim2.new(0, 147, 0, 36)
+Title.ZIndex = 2
+Title.Font = Enum.Font.SourceSans
+Title.Text = "NoName loader"
+Title.TextColor3 = Color3.fromRGB(74, 0, 186)
+Title.TextScaled = true
+Title.TextSize = 14.000
+Title.TextWrapped = true
+
+looks.Name = "looks"
+looks.Parent = Main
+looks.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+looks.BackgroundTransparency = 1.000
+looks.Position = UDim2.new(0, 0, 0.202586204, 0)
+looks.Size = UDim2.new(0, 413, 0, 20)
+looks.Image = "rbxassetid://3570695787"
+looks.ImageColor3 = Color3.fromRGB(80, 7, 163)
+looks.ScaleType = Enum.ScaleType.Slice
+looks.SliceCenter = Rect.new(100, 100, 100, 100)
+looks.SliceScale = 0.120
+
+cbro.Name = "cbro"
+cbro.Parent = Main
+cbro.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+cbro.BackgroundTransparency = 1.000
+cbro.BorderSizePixel = 0
+cbro.Position = UDim2.new(0.0460048467, 0, 0.521551728, 0)
+cbro.Size = UDim2.new(0, 146, 0, 31)
+cbro.ZIndex = 2
+cbro.Font = Enum.Font.SourceSans
+cbro.Text = "Counterblox"
+cbro.TextColor3 = Color3.fromRGB(74, 0, 186)
+cbro.TextScaled = true
+cbro.TextSize = 14.000
+cbro.TextWrapped = true
+
+TextButton_Roundify_12px.Name = "TextButton_Roundify_12px"
+TextButton_Roundify_12px.Parent = cbro
+TextButton_Roundify_12px.Active = true
+TextButton_Roundify_12px.AnchorPoint = Vector2.new(0.5, 0.5)
+TextButton_Roundify_12px.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TextButton_Roundify_12px.BackgroundTransparency = 1.000
+TextButton_Roundify_12px.Position = UDim2.new(0.5, 0, 0.5, 0)
+TextButton_Roundify_12px.Selectable = true
+TextButton_Roundify_12px.Size = UDim2.new(1, 0, 1, 0)
+TextButton_Roundify_12px.Image = "rbxassetid://3570695787"
+TextButton_Roundify_12px.ImageColor3 = Color3.fromRGB(45, 45, 45)
+TextButton_Roundify_12px.ScaleType = Enum.ScaleType.Slice
+TextButton_Roundify_12px.SliceCenter = Rect.new(100, 100, 100, 100)
+TextButton_Roundify_12px.SliceScale = 0.120
+
+PhantomForces.Name = "PhantomForces"
+PhantomForces.Parent = Main
+PhantomForces.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+PhantomForces.BackgroundTransparency = 1.000
+PhantomForces.BorderSizePixel = 0
+PhantomForces.Position = UDim2.new(0.598062992, 0, 0.521551728, 0)
+PhantomForces.Size = UDim2.new(0, 146, 0, 31)
+PhantomForces.ZIndex = 2
+PhantomForces.Font = Enum.Font.SourceSans
+PhantomForces.Text = "Phantom Forces"
+PhantomForces.TextColor3 = Color3.fromRGB(74, 0, 186)
+PhantomForces.TextScaled = true
+PhantomForces.TextSize = 14.000
+PhantomForces.TextWrapped = true
+
+TextButton_Roundify_12px_2.Name = "TextButton_Roundify_12px"
+TextButton_Roundify_12px_2.Parent = PhantomForces
+TextButton_Roundify_12px_2.Active = true
+TextButton_Roundify_12px_2.AnchorPoint = Vector2.new(0.5, 0.5)
+TextButton_Roundify_12px_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TextButton_Roundify_12px_2.BackgroundTransparency = 1.000
+TextButton_Roundify_12px_2.Position = UDim2.new(0.5, 0, 0.5, 0)
+TextButton_Roundify_12px_2.Selectable = true
+TextButton_Roundify_12px_2.Size = UDim2.new(1, 0, 1, 0)
+TextButton_Roundify_12px_2.Image = "rbxassetid://3570695787"
+TextButton_Roundify_12px_2.ImageColor3 = Color3.fromRGB(45, 45, 45)
+TextButton_Roundify_12px_2.ScaleType = Enum.ScaleType.Slice
+TextButton_Roundify_12px_2.SliceCenter = Rect.new(100, 100, 100, 100)
+TextButton_Roundify_12px_2.SliceScale = 0.120
+
+RainbowLine.Name = "RainbowLine"
+RainbowLine.Parent = Main
+RainbowLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+RainbowLine.BorderSizePixel = 0
+RainbowLine.Size = UDim2.new(0, 413, 0, 1)
+RainbowLine.ZIndex = 2
+RainbowLine.Image = "rbxassetid://6300577944"
+
+Loading1.Name = "Loading1"
+Loading1.Parent = Loader
+Loading1.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Loading1.BorderSizePixel = 0
+Loading1.Position = UDim2.new(0.402552217, 0, 0.453510463, 0)
+Loading1.Size = UDim2.new(0, 167, 0, 49)
+Loading1.Visible = false
+
+loadingpleasewait.Name = "loading please wait."
+loadingpleasewait.Parent = Loading1
+loadingpleasewait.BackgroundColor3 = Color3.fromRGB(93, 0, 136)
+loadingpleasewait.BackgroundTransparency = 1.000
+loadingpleasewait.BorderSizePixel = 0
+loadingpleasewait.Position = UDim2.new(0.0479041934, 0, 0.183673471, 0)
+loadingpleasewait.Size = UDim2.new(0, 151, 0, 31)
+loadingpleasewait.ZIndex = 2
+loadingpleasewait.Font = Enum.Font.SourceSans
+loadingpleasewait.Text = "Loading please wait."
+loadingpleasewait.TextColor3 = Color3.fromRGB(0, 0, 0)
+loadingpleasewait.TextScaled = true
+loadingpleasewait.TextSize = 14.000
+loadingpleasewait.TextWrapped = true
+
+loadingpleasewait_Roundify_12px.Name = "loading please wait_Roundify_12px"
+loadingpleasewait_Roundify_12px.Parent = loadingpleasewait
+loadingpleasewait_Roundify_12px.AnchorPoint = Vector2.new(0.5, 0.5)
+loadingpleasewait_Roundify_12px.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+loadingpleasewait_Roundify_12px.BackgroundTransparency = 1.000
+loadingpleasewait_Roundify_12px.Position = UDim2.new(0.5, 0, 0.5, 0)
+loadingpleasewait_Roundify_12px.Size = UDim2.new(1, 0, 1, 0)
+loadingpleasewait_Roundify_12px.Image = "rbxassetid://3570695787"
+loadingpleasewait_Roundify_12px.ImageColor3 = Color3.fromRGB(93, 0, 136)
+loadingpleasewait_Roundify_12px.ScaleType = Enum.ScaleType.Slice
+loadingpleasewait_Roundify_12px.SliceCenter = Rect.new(100, 100, 100, 100)
+loadingpleasewait_Roundify_12px.SliceScale = 0.120
+
+Loading2.Name = "Loading2"
+Loading2.Parent = Loader
+Loading2.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Loading2.BorderSizePixel = 0
+Loading2.Position = UDim2.new(0.402999997, 0, 0.453999996, 0)
+Loading2.Size = UDim2.new(0, 167, 0, 49)
+Loading2.Visible = false
+
+loadingpleasewait_2.Name = "loading please wait.."
+loadingpleasewait_2.Parent = Loading2
+loadingpleasewait_2.BackgroundColor3 = Color3.fromRGB(93, 0, 136)
+loadingpleasewait_2.BackgroundTransparency = 1.000
+loadingpleasewait_2.BorderSizePixel = 0
+loadingpleasewait_2.Position = UDim2.new(0.0479041934, 0, 0.183673471, 0)
+loadingpleasewait_2.Size = UDim2.new(0, 151, 0, 31)
+loadingpleasewait_2.ZIndex = 2
+loadingpleasewait_2.Font = Enum.Font.SourceSans
+loadingpleasewait_2.Text = "Loading please wait.."
+loadingpleasewait_2.TextColor3 = Color3.fromRGB(0, 0, 0)
+loadingpleasewait_2.TextScaled = true
+loadingpleasewait_2.TextSize = 14.000
+loadingpleasewait_2.TextWrapped = true
+
+loadingpleasewait_Roundify_12px_2.Name = "loading please wait_Roundify_12px"
+loadingpleasewait_Roundify_12px_2.Parent = loadingpleasewait_2
+loadingpleasewait_Roundify_12px_2.AnchorPoint = Vector2.new(0.5, 0.5)
+loadingpleasewait_Roundify_12px_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+loadingpleasewait_Roundify_12px_2.BackgroundTransparency = 1.000
+loadingpleasewait_Roundify_12px_2.Position = UDim2.new(0.5, 0, 0.5, 0)
+loadingpleasewait_Roundify_12px_2.Size = UDim2.new(1, 0, 1, 0)
+loadingpleasewait_Roundify_12px_2.Image = "rbxassetid://3570695787"
+loadingpleasewait_Roundify_12px_2.ImageColor3 = Color3.fromRGB(93, 0, 136)
+loadingpleasewait_Roundify_12px_2.ScaleType = Enum.ScaleType.Slice
+loadingpleasewait_Roundify_12px_2.SliceCenter = Rect.new(100, 100, 100, 100)
+loadingpleasewait_Roundify_12px_2.SliceScale = 0.120
+
+Loading3.Name = "Loading3"
+Loading3.Parent = Loader
+Loading3.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Loading3.BorderSizePixel = 0
+Loading3.Position = UDim2.new(0.402999997, 0, 0.453999996, 0)
+Loading3.Size = UDim2.new(0, 167, 0, 49)
+Loading3.Visible = false
+
+loadingpleasewait_3.Name = "loading please wait..."
+loadingpleasewait_3.Parent = Loading3
+loadingpleasewait_3.BackgroundColor3 = Color3.fromRGB(93, 0, 136)
+loadingpleasewait_3.BackgroundTransparency = 1.000
+loadingpleasewait_3.BorderSizePixel = 0
+loadingpleasewait_3.Position = UDim2.new(0.0479041934, 0, 0.183673471, 0)
+loadingpleasewait_3.Size = UDim2.new(0, 151, 0, 31)
+loadingpleasewait_3.ZIndex = 2
+loadingpleasewait_3.Font = Enum.Font.SourceSans
+loadingpleasewait_3.Text = "Loading please wait..."
+loadingpleasewait_3.TextColor3 = Color3.fromRGB(0, 0, 0)
+loadingpleasewait_3.TextScaled = true
+loadingpleasewait_3.TextSize = 14.000
+loadingpleasewait_3.TextWrapped = true
+
+loadingpleasewait_Roundify_12px_3.Name = "loading please wait_Roundify_12px"
+loadingpleasewait_Roundify_12px_3.Parent = loadingpleasewait_3
+loadingpleasewait_Roundify_12px_3.AnchorPoint = Vector2.new(0.5, 0.5)
+loadingpleasewait_Roundify_12px_3.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+loadingpleasewait_Roundify_12px_3.BackgroundTransparency = 1.000
+loadingpleasewait_Roundify_12px_3.Position = UDim2.new(0.5, 0, 0.5, 0)
+loadingpleasewait_Roundify_12px_3.Size = UDim2.new(1, 0, 1, 0)
+loadingpleasewait_Roundify_12px_3.Image = "rbxassetid://3570695787"
+loadingpleasewait_Roundify_12px_3.ImageColor3 = Color3.fromRGB(93, 0, 136)
+loadingpleasewait_Roundify_12px_3.ScaleType = Enum.ScaleType.Slice
+loadingpleasewait_Roundify_12px_3.SliceCenter = Rect.new(100, 100, 100, 100)
+loadingpleasewait_Roundify_12px_3.SliceScale = 0.120
+
+Pic.Name = "Pic"
+Pic.Parent = Loader
+Pic.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Pic.BorderSizePixel = 0
+Pic.Position = UDim2.new(0.377030164, 0, 0.297912717, 0)
+Pic.Size = UDim2.new(0, 212, 0, 212)
+Pic.Visible = false
+Pic.Image = "rbxassetid://6300622664"
+
+Login.Name = "Login"
+Login.Parent = Loader
+Login.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Login.BorderSizePixel = 0
+Login.Position = UDim2.new(0.307424605, 0, 0.288425058, 0)
+Login.Size = UDim2.new(0, 332, 0, 190)
+Login.Visible = false
+
+Top.Name = "Top"
+Top.Parent = Login
+Top.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Top.BorderSizePixel = 0
+Top.Size = UDim2.new(0, 332, 0, 74)
+
+Bottom.Name = "Bottom"
+Bottom.Parent = Login
+Bottom.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Bottom.BorderSizePixel = 0
+Bottom.Position = UDim2.new(0, 0, 0.646662652, 0)
+Bottom.Size = UDim2.new(0, 332, 0, 74)
+
+Login_2.Name = "Login"
+Login_2.Parent = Login
+Login_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Login_2.BackgroundTransparency = 1.000
+Login_2.Position = UDim2.new(0.196364403, 0, 0.0507328808, 0)
+Login_2.Size = UDim2.new(0, 200, 0, 50)
+Login_2.Font = Enum.Font.SourceSans
+Login_2.Text = "Login"
+Login_2.TextColor3 = Color3.fromRGB(99, 7, 179)
+Login_2.TextScaled = true
+Login_2.TextSize = 14.000
+Login_2.TextWrapped = true
+
+Loginbox.Name = "Loginbox"
+Loginbox.Parent = Login
+Loginbox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Loginbox.BackgroundTransparency = 1.000
+Loginbox.Position = UDim2.new(0, 0, 0.438963085, 0)
+Loginbox.Size = UDim2.new(0, 331, 0, 29)
+Loginbox.ZIndex = 2
+Loginbox.Font = Enum.Font.SourceSans
+Loginbox.Text = ""
+Loginbox.TextColor3 = Color3.fromRGB(74, 0, 186)
+Loginbox.TextScaled = true
+Loginbox.TextSize = 14.000
+Loginbox.TextWrapped = true
+
+Enter.Name = "Enter"
+Enter.Parent = Login
+Enter.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Enter.BackgroundTransparency = 1.000
+Enter.BorderSizePixel = 0
+Enter.Position = UDim2.new(0.283713818, 0, 0.762936234, 0)
+Enter.Size = UDim2.new(0, 143, 0, 29)
+Enter.ZIndex = 2
+Enter.Font = Enum.Font.SourceSans
+Enter.Text = "Enter"
+Enter.TextColor3 = Color3.fromRGB(0, 0, 198)
+Enter.TextScaled = true
+Enter.TextSize = 14.000
+Enter.TextWrapped = true
+
+Enter_Roundify_12px.Name = "Enter_Roundify_12px"
+Enter_Roundify_12px.Parent = Enter
+Enter_Roundify_12px.Active = true
+Enter_Roundify_12px.AnchorPoint = Vector2.new(0.5, 0.5)
+Enter_Roundify_12px.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Enter_Roundify_12px.BackgroundTransparency = 1.000
+Enter_Roundify_12px.Position = UDim2.new(0.5, 0, 0.5, 0)
+Enter_Roundify_12px.Selectable = true
+Enter_Roundify_12px.Size = UDim2.new(1, 0, 1, 0)
+Enter_Roundify_12px.Image = "rbxassetid://3570695787"
+Enter_Roundify_12px.ImageColor3 = Color3.fromRGB(35, 35, 35)
+Enter_Roundify_12px.ScaleType = Enum.ScaleType.Slice
+Enter_Roundify_12px.SliceCenter = Rect.new(100, 100, 100, 100)
+Enter_Roundify_12px.SliceScale = 0.120
+
+Loginloading.Name = "Loginloading"
+Loginloading.Parent = Loader
+Loginloading.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Loginloading.Position = UDim2.new(0.399071932, 0, 0.464895606, 0)
+Loginloading.Size = UDim2.new(0, 174, 0, 37)
+Loginloading.Visible = false
+
+TextLabel.Parent = Loginloading
+TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.BackgroundTransparency = 1.000
+TextLabel.Position = UDim2.new(0.0344827585, 0, 0.0810810849, 0)
+TextLabel.Size = UDim2.new(0, 162, 0, 30)
+TextLabel.Font = Enum.Font.SourceSans
+TextLabel.Text = "correct key loading script..."
+TextLabel.TextColor3 = Color3.fromRGB(112, 4, 175)
+TextLabel.TextScaled = true
+TextLabel.TextSize = 14.000
+TextLabel.TextWrapped = true
+
+-- Scripts:
+
+local function POSA_fake_script() -- cbro.LocalScript 
+	local script = Instance.new('LocalScript', cbro)
+
+	function Leftclick()
+	
+	if game.PlaceId == 301549746 then
+		script.Parent.Parent.Parent.Main.Visible = false
+		wait(0.9)
+		script.Parent.Parent.Parent.Pic.Visible = true
+		wait(0.9)
+		script.Parent.Parent.Parent.Pic.Visible = false
+		script.Parent.Parent.Parent.Loading1.Visible = true
+		wait(0.9)
+		script.Parent.Parent.Parent.Loading1.Visible = false
+		script.Parent.Parent.Parent.Loading2.Visible = true
+		wait(0.9)
+		script.Parent.Parent.Parent.Loading2.Visible = false
+		script.Parent.Parent.Parent.Loading3.Visible = true
+		wait(0.9)
+		script.Parent.Parent.Parent.Loading3.Visible = false
+		script.Parent.Parent.Parent.Loading1.Visible = true
+		wait(0.9)
+		script.Parent.Parent.Parent.Loading1.Visible = false
+		script.Parent.Parent.Parent.Loading2.Visible = true
+		wait(0.9)
+		script.Parent.Parent.Parent.Loading2.Visible = false
+		script.Parent.Parent.Parent.Loading3.Visible = true
+		wait(0.9)
+		script.Parent.Parent.Parent.Loading3.Visible = false
+		wait(0.9)
+	
+	
+	else
+			game.Players.LocalPlayer:kick("Game not supported Games supported:\n counterblox, phantomforces")
+		end
+	end
+	
+	script.Parent.MouseButton1Click:Connect(Leftclick)
 end
+coroutine.wrap(POSA_fake_script)()
+local function CEPWDV_fake_script() -- Loader.LocalScript 
+	local script = Instance.new('LocalScript', Loader)
+
+	script.Parent.Main.Active = true
+	script.Parent.Main.Selectable = true
+	script.Parent.Main.Draggable = true
+	script.Parent.Login.Active = true
+	script.Parent.Login.Selectable = true
+	script.Parent.Login.Draggable = true
+end
+coroutine.wrap(CEPWDV_fake_script)()
+local function UZWQ_fake_script() -- Enter.LocalScript 
+	local script = Instance.new('LocalScript', Enter)
+
+	script.Parent.MouseButton1Click:Connect(function()
+		if script.Parent.Parent.Loginbox.Text == "nn" then
+			script.Parent.Parent.Parent.Login.Visible = false
+			wait(0.5)
+			script.Parent.Parent.Parent.Loginloading.Visible = true
+			wait(1)
+			script.Parent.Parent.Parent.Loginloading.Visible = false
+			wait(0.4)
+			script.Parent.Parent.Parent.Main.Visible = true
+		else	
+			game.Players.LocalPlayer:kick("Wrong key please look at discord for key")
+		end
+		
+	end)
+end
+coroutine.wrap(UZWQ_fake_script)()
+local function OEFRLTC_fake_script() -- Loader.LocalScript 
+	local script = Instance.new('LocalScript', Loader)
+
+	if Key == ("nn") then
+		script.Parent.Login.Visible = true
+	else
+		game.Players.LocalPlayer:kick("Wrong key")
+	end
+end
+coroutine.wrap(OEFRLTC_fake_script)()
