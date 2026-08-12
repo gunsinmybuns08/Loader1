@@ -1,0 +1,14 @@
+Library.Theme -- Background Container ContentBackground Separator Accent Text MutedText font
+
+Library:changeTheme(themeKey, newColor)
+Library:CreateWindow(titleText)
+Window:CreateTab(tabName)
+Tab:CreateSubSection(subName)
+Section:Spacing(height)
+Section:AddButton(text, callback)
+Section:AddToggle(text, defaultState, callback)
+Section:AddKeybind(text, defaultKey, callback)
+Section:AddSlider(text, min, max, default, callback)
+Section:AddDropdown(text, options, defaultOption, callback)
+Section:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, callback)
+Section:AddTextbox(text, placeholderText, defaultText, callback)
