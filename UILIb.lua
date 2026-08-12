@@ -58,14 +58,32 @@ ScreenGui.Name = "CustomUILibrary"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
-
 function Library:CreateWindow(titleText)
 	local Window = {
 		Tabs = {},
 		ActiveTab = nil,
 		windowVisible = true
 	}
-	
+
+
+    
+
+    function Library:drawRect(properties)
+        local Rect = Instance.new("Frame")
+        for i,v in pairs(properties) do
+            Rect[i] = v
+        end
+
+    end
+    function Library:drawText(properties)
+        if element == "Text" or "text" or "label" then
+             local text = Instance.new("TextLabel")
+            for i,v in pairs(properties) do
+                text[i] = v
+            end
+    	end
+    end
+
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Name = "MainFrame"
 	MainFrame.Size = UDim2.new(0, 450, 0, 340)
@@ -248,6 +266,7 @@ function Library:CreateWindow(titleText)
 			resizing = false
 		end
 	end)
+
 
 	local function CreateComponents(TargetContainer)
 		local Comp = {}
