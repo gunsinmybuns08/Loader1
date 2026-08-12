@@ -1,9 +1,13 @@
 Library.Theme -- Background Container ContentBackground Separator Accent Text MutedText font
-
 Library:changeTheme(themeKey, newColor)
 Library:CreateWindow(titleText)
+Library:drawRect(properties)
+Library:drawText(properties)
+
 Window:CreateTab(tabName)
+
 Tab:CreateSubSection(subName)
+
 Section:Spacing(height)
 Section:AddButton(text, callback)
 Section:AddToggle(text, defaultState, callback)
