@@ -1,11 +1,14 @@
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local Library = {}
+Library.Flags = {}
+Library.Elements = {}
 Library.Theme = {
 	Background = Color3.fromRGB(30, 30, 35),
 	Container = Color3.fromRGB(40, 40, 45),
@@ -19,7 +22,89 @@ Library.Theme = {
 
 Library.Keybinds = {}
 Library.ThemeObjects = {}
-Library.ActiveColorpicker = nil -- Tracks globally active color picker popup
+Library.ActiveColorpicker = nil
+
+--------------------------------------------------------------------------------
+-- CONFIG SYSTEM
+--------------------------------------------------------------------------------
+
+local function SerializeValue(value)
+	if typeof(value) == "Color3" then
+		return { __type = "Color3", R = value.R, G = value.G, B = value.B }
+	elseif typeof(value) == "EnumItem" then
+		return { __type = "EnumItem", EnumType = tostring(value.EnumType), Name = value.Name }
+	end
+	return value
+end
+
+local function DeserializeValue(value)
+	if type(value) == "table" then
+		if value.__type == "Color3" or (value.R and value.G and value.B) then
+			return Color3.new(value.R, value.G, value.B)
+		elseif value.__type == "EnumItem" then
+			local enumTable = Enum[value.EnumType]
+			if enumTable and enumTable[value.Name] then
+				return enumTable[value.Name]
+			end
+		end
+	end
+	return value
+end
+
+function Library:SaveConfig(fileName)
+	fileName = fileName or "default_config"
+	if not writefile then return end
+
+	local dataToSave = {}
+	for flag, value in pairs(Library.Flags) do
+		dataToSave[flag] = SerializeValue(value)
+	end
+
+	local success, err = pcall(function()
+		writefile(fileName .. ".json", HttpService:JSONEncode(dataToSave))
+	end)
+
+	if not success then
+		warn("[Library Config]: Failed to save config - " .. tostring(err))
+	end
+end
+
+function Library:LoadConfig(fileName)
+	fileName = fileName or "default_config"
+	local path = fileName .. ".json"
+	
+	if not (isfile and readfile and isfile(path)) then return end
+
+	local success, decoded = pcall(function()
+		return HttpService:JSONDecode(readfile(path))
+	end)
+
+	if success and type(decoded) == "table" then
+		for flag, rawValue in pairs(decoded) do
+			local value = DeserializeValue(rawValue)
+			Library.Flags[flag] = value
+
+			local element = Library.Elements[flag]
+			if element and element.Set then
+				element:Set(value)
+			end
+		end
+	else
+		warn("[Library Config]: Failed to load config file.")
+	end
+end
+
+function Library:DeleteConfig(fileName)
+	fileName = fileName or "default_config"
+	local path = fileName .. ".json"
+	if isfile and delfile and isfile(path) then
+		delfile(path)
+	end
+end
+
+--------------------------------------------------------------------------------
+-- THEME & INPUT SYSTEM
+--------------------------------------------------------------------------------
 
 function Library:changeTheme(themeKey, newColor)
 	if Library.Theme[themeKey] then
@@ -42,7 +127,6 @@ local function RegisterTheme(guiObject, propertyName, themeKey)
 	})
 end
 
--- FIXED: Added type check for keybind.Callback to prevent non-function errors
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 
@@ -60,35 +144,23 @@ ScreenGui.Name = "CustomUILibrary"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
+--------------------------------------------------------------------------------
+-- WINDOW CREATION
+--------------------------------------------------------------------------------
+
 function Library:CreateWindow(titleText)
 	local Window = {
 		Tabs = {},
 		ActiveTab = nil,
-		windowVisible = true
+		windowVisible = true,
+		BaseWidth = 450,
+		BaseHeight = 340
 	}
-
-    function Library:drawRect(properties)
-        local Rect = Instance.new("Frame")
-        for i,v in pairs(properties) do
-            Rect[i] = v
-        end
-    end
-
-	function Library:drawText(element, properties)
-	    local elementName = tostring(element)
-	    if elementName == "text" or elementName == "label" then
-	        local text = Instance.new("TextLabel")
-	        for i, v in pairs(properties) do
-	            text[i] = v
-	        end
-	        return text
-	    end
-	end
 
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Name = "MainFrame"
-	MainFrame.Size = UDim2.new(0, 450, 0, 340)
-	MainFrame.Position = UDim2.new(0.5, -225, 0.5, -170)
+	MainFrame.Size = UDim2.new(0, Window.BaseWidth, 0, Window.BaseHeight)
+	MainFrame.Position = UDim2.new(0.5, -Window.BaseWidth / 2, 0.5, -Window.BaseHeight / 2)
 	RegisterTheme(MainFrame, "BackgroundColor3", "Background")
 	MainFrame.BorderSizePixel = 0
 	MainFrame.Active = true
@@ -225,6 +297,23 @@ function Library:CreateWindow(titleText)
 		end
 	end
 
+	local function AdjustWidthForTabs()
+		local tabWidth = 100
+		local tabPadding = 6
+		local sideMargin = 20
+		local totalTabs = #Window.Tabs
+
+		if totalTabs == 0 then return end
+
+		local requiredWidth = (totalTabs * tabWidth) + ((totalTabs - 1) * tabPadding) + sideMargin
+
+		if requiredWidth > MainFrame.AbsoluteSize.X then
+			local currentHeight = MainFrame.AbsoluteSize.Y
+			MainFrame.Size = UDim2.new(0, requiredWidth, 0, currentHeight)
+			MainFrame.Position = UDim2.new(0.5, -requiredWidth / 2, 0.5, -currentHeight / 2)
+		end
+	end
+
 	local ResizeHandle = Instance.new("TextButton")
 	ResizeHandle.Name = "ResizeHandle"
 	ResizeHandle.Size = UDim2.new(0, 15, 0, 15)
@@ -309,9 +398,16 @@ function Library:CreateWindow(titleText)
 			Button.MouseButton1Click:Connect(callback)
 		end
 
-		function Comp:AddToggle(text, defaultState, callback)
+		function Comp:AddToggle(text, defaultState, flag, callback)
+			if type(flag) == "function" then
+				callback = flag
+				flag = text
+			end
 			callback = callback or function() end
+			flag = flag or text
+
 			local toggled = defaultState or false
+			Library.Flags[flag] = toggled
 			
 			local ToggleFrame = Instance.new("Frame")
 			ToggleFrame.Size = UDim2.new(1, 0, 0, 32)
@@ -348,18 +444,36 @@ function Library:CreateWindow(titleText)
 			ClickArea.BackgroundTransparency = 1
 			ClickArea.Text = ""
 			ClickArea.Parent = ToggleFrame
-			
-			ClickArea.MouseButton1Click:Connect(function()
-				toggled = not toggled
+
+			local function SetState(state)
+				toggled = state
+				Library.Flags[flag] = toggled
 				local targetColor = toggled and Library.Theme.Accent or Library.Theme.Background
 				TweenService:Create(Indicator, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
 				callback(toggled)
+			end
+			
+			ClickArea.MouseButton1Click:Connect(function()
+				SetState(not toggled)
 			end)
+
+			Library.Elements[flag] = { 
+				Set = function(self, val)
+					SetState(val)
+				end 
+			}
 		end
 
-		function Comp:AddKeybind(text, defaultKey, callback)
+		function Comp:AddKeybind(text, defaultKey, flag, callback)
+			if type(flag) == "function" then
+				callback = flag
+				flag = text
+			end
 			callback = callback or function() end
+			flag = flag or text
+
 			local currentKey = defaultKey or Enum.KeyCode.E
+			Library.Flags[flag] = currentKey
 			local listening = false
 
 			local keybindData = {
@@ -392,7 +506,7 @@ function Library:CreateWindow(titleText)
 			KeyButton.Size = UDim2.new(0, 75, 0, 22)
 			KeyButton.Position = UDim2.new(1, -83, 0.5, -11)
 			RegisterTheme(KeyButton, "BackgroundColor3", "Background")
-			KeyButton.Text = currentKey.Name
+			KeyButton.Text = type(currentKey) == "userdata" and currentKey.Name or tostring(currentKey)
 			RegisterTheme(KeyButton, "TextColor3", "Text")
 			KeyButton.TextSize = 12
 			KeyButton.Font = Enum.Font.SourceSansBold
@@ -402,6 +516,13 @@ function Library:CreateWindow(titleText)
 			local KeyCorner = Instance.new("UICorner")
 			KeyCorner.CornerRadius = UDim.new(0, 4)
 			KeyCorner.Parent = KeyButton
+
+			local function SetKey(newKey)
+				currentKey = newKey
+				keybindData.Key = newKey
+				Library.Flags[flag] = newKey
+				KeyButton.Text = type(newKey) == "userdata" and newKey.Name or tostring(newKey)
+			end
 
 			local rebindConnection
 			KeyButton.MouseButton1Click:Connect(function()
@@ -416,9 +537,7 @@ function Library:CreateWindow(titleText)
 					input.UserInputType == Enum.UserInputType.MouseButton2 then
 						
 						local newKey = (input.UserInputType == Enum.UserInputType.Keyboard) and input.KeyCode or input.UserInputType
-						
-						keybindData.Key = newKey
-						KeyButton.Text = newKey.Name
+						SetKey(newKey)
 						listening = false
 
 						TweenService:Create(KeyButton, TweenInfo.new(0.2), {BackgroundColor3 = Library.Theme.Background}):Play()
@@ -430,13 +549,26 @@ function Library:CreateWindow(titleText)
 					end
 				end)
 			end)
+
+			Library.Elements[flag] = { 
+				Set = function(self, val)
+					SetKey(val)
+				end 
+			}
 		end
 
-		function Comp:AddSlider(text, min, max, default, callback)
+		function Comp:AddSlider(text, min, max, default, flag, callback)
+			if type(flag) == "function" then
+				callback = flag
+				flag = text
+			end
 			callback = callback or function() end
+			flag = flag or text
+
 			min = min or 0
 			max = max or 100
 			default = math.clamp(default or min, min, max)
+			Library.Flags[flag] = default
 
 			local SliderFrame = Instance.new("Frame")
 			SliderFrame.Size = UDim2.new(1, 0, 0, 42)
@@ -496,14 +628,20 @@ function Library:CreateWindow(titleText)
 
 			local dragging = false
 
+			local function SetValue(val)
+				val = math.clamp(val, min, max)
+				Library.Flags[flag] = val
+				local scale = (val - min) / (max - min)
+				Fill.Size = UDim2.new(scale, 0, 1, 0)
+				ValueLabel.Text = tostring(val) .. " / " .. tostring(max)
+				callback(val)
+			end
+
 			local function UpdateSlider(input)
 				local relativeX = math.clamp(input.Position.X - Track.AbsolutePosition.X, 0, Track.AbsoluteSize.X)
 				local scale = relativeX / Track.AbsoluteSize.X
 				local value = math.floor(min + (max - min) * scale)
-
-				Fill.Size = UDim2.new(scale, 0, 1, 0)
-				ValueLabel.Text = tostring(value) .. " / " .. tostring(max)
-				callback(value)
+				SetValue(value)
 			end
 
 			Track.InputBegan:Connect(function(input)
@@ -524,12 +662,25 @@ function Library:CreateWindow(titleText)
 					dragging = false
 				end
 			end)
+
+			Library.Elements[flag] = { 
+				Set = function(self, val)
+					SetValue(val)
+				end 
+			}
 		end
 
-		function Comp:AddDropdown(text, options, defaultOption, callback)
+		function Comp:AddDropdown(text, options, defaultOption, flag, callback)
+			if type(flag) == "function" then
+				callback = flag
+				flag = text
+			end
 			callback = callback or function() end
+			flag = flag or text
+
 			options = options or {}
 			local selected = defaultOption or options[1] or "Select..."
+			Library.Flags[flag] = selected
 			local open = false
 
 			local DropdownFrame = Instance.new("Frame")
@@ -591,6 +742,13 @@ function Library:CreateWindow(titleText)
 				}):Play()
 			end
 
+			local function SetSelected(option)
+				selected = option
+				Library.Flags[flag] = selected
+				SelectedButton.Text = selected .. (open and "  ▲" or "  ▼")
+				callback(selected)
+			end
+
 			SelectedButton.MouseButton1Click:Connect(ToggleDropdown)
 
 			for _, option in ipairs(options) do
@@ -623,482 +781,507 @@ function Library:CreateWindow(titleText)
 				end)
 
 				OptionBtn.MouseButton1Click:Connect(function()
-					selected = option
+					SetSelected(option)
 					ToggleDropdown()
-					callback(selected)
 				end)
 			end
+
+			Library.Elements[flag] = { 
+				Set = function(self, val)
+					SetSelected(val)
+				end 
+			}
 		end
 
-        function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, callback)
-            if type(useAlpha) == "function" then
-                callback = useAlpha
-                useAlpha = false
-                defaultAlpha = 1
-            elseif type(defaultAlpha) == "function" then
-                callback = defaultAlpha
-                defaultAlpha = 1
-            end
+		function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
+			if type(useAlpha) == "function" then
+				callback = useAlpha
+				flag = text
+				useAlpha = false
+				defaultAlpha = 1
+			elseif type(defaultAlpha) == "function" then
+				callback = defaultAlpha
+				flag = useAlpha
+				useAlpha = false
+				defaultAlpha = 1
+			elseif type(flag) == "function" then
+				callback = flag
+				flag = text
+			end
 
-            callback = callback or function() end
-            local currentColor = defaultColor or Color3.fromRGB(255, 255, 255)
-            local originalColor = currentColor
-            local currentAlpha = math.clamp(defaultAlpha or 1, 0, 1)
-
-            -- Main Compact Item Frame
-            local ColorpickerFrame = Instance.new("Frame")
-            ColorpickerFrame.Name = "ColorpickerFrame"
-            ColorpickerFrame.Size = UDim2.new(1, 0, 0, 32)
-            ColorpickerFrame.BackgroundColor3 = Library.Theme.Container
-            ColorpickerFrame.ClipsDescendants = true
-            ColorpickerFrame.Parent = TargetContainer
-
-            local FrameCorner = Instance.new("UICorner")
-            FrameCorner.CornerRadius = UDim.new(0, 5)
-            FrameCorner.Parent = ColorpickerFrame
-
-            local Label = Instance.new("TextLabel")
-            Label.Size = UDim2.new(0.5, -10, 0, 32)
-            Label.Position = UDim2.new(0, 10, 0, 0)
-            Label.BackgroundTransparency = 1
-            Label.Text = text
-            Label.TextColor3 = Library.Theme.Text
-            Label.TextSize = 13
-            Label.Font = Enum.Font.SourceSans
-            Label.TextXAlignment = Enum.TextXAlignment.Left
-            Label.Parent = ColorpickerFrame
-
-            local ColorPreview = Instance.new("TextButton")
-            ColorPreview.Size = UDim2.new(0, 45, 0, 20)
-            ColorPreview.Position = UDim2.new(1, -55, 0, 6)
-            ColorPreview.BackgroundColor3 = currentColor
-            ColorPreview.BackgroundTransparency = 1 - currentAlpha
-            ColorPreview.Text = ""
-            ColorPreview.AutoButtonColor = false
-            ColorPreview.Parent = ColorpickerFrame
-
-            local PreviewCorner = Instance.new("UICorner")
-            PreviewCorner.CornerRadius = UDim.new(0, 4)
-            PreviewCorner.Parent = ColorPreview
-
-            -- Function to create popup window
-            local function OpenColorpickerWindow()
-                -- Check if this specific colorpicker window is already open
-                if Library.ActiveColorpicker and Library.ActiveColorpicker.Name == "ColorpickerWindow_" .. text then
-                    Library.ActiveColorpicker:Destroy()
-                    Library.ActiveColorpicker = nil
-                    return
-                end
-
-                -- Close any active color picker before opening a new one
-                if Library.ActiveColorpicker then
-                    Library.ActiveColorpicker:Destroy()
-                    Library.ActiveColorpicker = nil
-                end
-
-                local windowWidth, windowHeight = 260, useAlpha and 280 or 255
-
-                -- Locate top-level ScreenGui
-                local ScreenGui = ColorpickerFrame:FindFirstAncestorWhichIsA("ScreenGui") or TargetContainer
-
-                local Window = Instance.new("Frame")
-                Window.Name = "ColorpickerWindow_" .. text
-                Window.Size = UDim2.new(0, windowWidth, 0, windowHeight)
-                -- Center relative to screen or button
-                Window.Position = UDim2.new(0.5, -windowWidth / 2, 0.5, -windowHeight / 2)
-                Window.BackgroundColor3 = Library.Theme.Container
-                Window.BorderSizePixel = 0
-                Window.ZIndex = 100
-                Window.Parent = ScreenGui
-                
-                -- Set global reference
-                Library.ActiveColorpicker = Window
-
-                local WindowCorner = Instance.new("UICorner")
-                WindowCorner.CornerRadius = UDim.new(0, 6)
-                WindowCorner.Parent = Window
-
-                -- Title Bar
-                local TitleBar = Instance.new("Frame")
-                TitleBar.Size = UDim2.new(1, 0, 0, 28)
-                TitleBar.BackgroundColor3 = Library.Theme.Background
-                TitleBar.BorderSizePixel = 0
-                TitleBar.ZIndex = 101
-                TitleBar.Parent = Window
-
-                local TitleCorner = Instance.new("UICorner")
-                TitleCorner.CornerRadius = UDim.new(0, 6)
-                TitleCorner.Parent = TitleBar
-
-                local TitleLabel = Instance.new("TextLabel")
-                TitleLabel.Size = UDim2.new(1, -30, 1, 0)
-                TitleLabel.Position = UDim2.new(0, 10, 0, 0)
-                TitleLabel.BackgroundTransparency = 1
-                TitleLabel.Text = text .. " - Color Picker"
-                TitleLabel.TextColor3 = Library.Theme.Text
-                TitleLabel.TextSize = 13
-                TitleLabel.Font = Enum.Font.SourceSansBold
-                TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-                TitleLabel.ZIndex = 102
-                TitleLabel.Parent = TitleBar
-
-                local CloseBtn = Instance.new("TextButton")
-                CloseBtn.Size = UDim2.new(0, 28, 0, 28)
-                CloseBtn.Position = UDim2.new(1, -28, 0, 0)
-                CloseBtn.BackgroundTransparency = 1
-                CloseBtn.Text = "X"
-                CloseBtn.TextColor3 = Library.Theme.Text
-                CloseBtn.TextSize = 12
-                CloseBtn.Font = Enum.Font.SourceSansBold
-                CloseBtn.ZIndex = 102
-                CloseBtn.Parent = TitleBar
-
-                CloseBtn.MouseButton1Click:Connect(function()
-                    if Library.ActiveColorpicker == Window then
-                        Library.ActiveColorpicker:Destroy()
-                        Library.ActiveColorpicker = nil
-                    else
-                        Window:Destroy()
-                    end
-                end)
-
-                -- Dragging system for TitleBar
-                local dragging, dragInput, dragStart, startPos
-                TitleBar.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                        dragging = true
-                        dragStart = input.Position
-                        startPos = Window.Position
-                        input.Changed:Connect(function()
-                            if input.UserInputState == Enum.UserInputState.End then
-                                dragging = false
-                            end
-                        end)
-                    end
-                end)
-
-                TitleBar.InputChanged:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                        dragInput = input
-                    end
-                end)
-
-                UserInputService.InputChanged:Connect(function(input)
-                    if input == dragInput and dragging then
-                        local delta = input.Position - dragStart
-                        Window.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-                    end
-                end)
-
-                -- Picker Content Container
-                local PickerHolder = Instance.new("Frame")
-                PickerHolder.Size = UDim2.new(1, -20, 1, -38)
-                PickerHolder.Position = UDim2.new(0, 10, 0, 32)
-                PickerHolder.BackgroundTransparency = 1
-                PickerHolder.ZIndex = 101
-                PickerHolder.Parent = Window
-
-                -- Saturation & Value Canvas
-                local SVCanvas = Instance.new("TextButton")
-                SVCanvas.Size = UDim2.new(0, 130, 0, 120)
-                SVCanvas.Position = UDim2.new(0, 0, 0, 0)
-                SVCanvas.BackgroundColor3 = currentColor
-                SVCanvas.AutoButtonColor = false
-                SVCanvas.Text = ""
-                SVCanvas.ZIndex = 102
-                SVCanvas.Parent = PickerHolder
-
-                local SVCorner = Instance.new("UICorner")
-                SVCorner.CornerRadius = UDim.new(0, 3)
-                SVCorner.Parent = SVCanvas
-
-                local ValueGradient = Instance.new("UIGradient")
-                ValueGradient.Rotation = 90
-                ValueGradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0))
-                ValueGradient.Parent = SVCanvas
-
-                local SVKnob = Instance.new("Frame")
-                SVKnob.Size = UDim2.new(0, 8, 0, 8)
-                SVKnob.AnchorPoint = Vector2.new(0.5, 0.5)
-                SVKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                SVKnob.BorderSizePixel = 0
-                SVKnob.ZIndex = 103
-                SVKnob.Parent = SVCanvas
-
-                local KnobCorner = Instance.new("UICorner")
-                KnobCorner.CornerRadius = UDim.new(1, 0)
-                KnobCorner.Parent = SVKnob
-
-                -- Vertical Hue Bar
-                local HueBar = Instance.new("TextButton")
-                HueBar.Size = UDim2.new(0, 16, 0, 120)
-                HueBar.Position = UDim2.new(0, 136, 0, 0)
-                HueBar.AutoButtonColor = false
-                HueBar.Text = ""
-                HueBar.ZIndex = 102
-                HueBar.Parent = PickerHolder
-
-                local HueCorner = Instance.new("UICorner")
-                HueCorner.CornerRadius = UDim.new(0, 3)
-                HueCorner.Parent = HueBar
-
-                local HueGradient = Instance.new("UIGradient")
-                HueGradient.Rotation = 90
-                HueGradient.Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
-                    ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
-                    ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
-                    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
-                    ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
-                    ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
-                    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0))
-                })
-                HueGradient.Parent = HueBar
-
-                -- Swatches Area
-                local SwatchesFrame = Instance.new("Frame")
-                SwatchesFrame.Size = UDim2.new(1, -158, 0, 120)
-                SwatchesFrame.Position = UDim2.new(0, 158, 0, 0)
-                SwatchesFrame.BackgroundTransparency = 1
-                SwatchesFrame.ZIndex = 102
-                SwatchesFrame.Parent = PickerHolder
-
-                local CurrentLabel = Instance.new("TextLabel")
-                CurrentLabel.Size = UDim2.new(1, 0, 0, 14)
-                CurrentLabel.BackgroundTransparency = 1
-                CurrentLabel.Text = "Current"
-                CurrentLabel.TextColor3 = Library.Theme.Text
-                CurrentLabel.TextSize = 11
-                CurrentLabel.Font = Enum.Font.SourceSans
-                CurrentLabel.TextXAlignment = Enum.TextXAlignment.Left
-                CurrentLabel.ZIndex = 102
-                CurrentLabel.Parent = SwatchesFrame
-
-                local CurrentBox = Instance.new("Frame")
-                CurrentBox.Size = UDim2.new(1, 0, 0, 32)
-                CurrentBox.Position = UDim2.new(0, 0, 0, 15)
-                CurrentBox.BackgroundColor3 = currentColor
-                CurrentBox.BorderSizePixel = 0
-                CurrentBox.ZIndex = 102
-                CurrentBox.Parent = SwatchesFrame
-
-                local OriginalLabel = Instance.new("TextLabel")
-                OriginalLabel.Size = UDim2.new(1, 0, 0, 14)
-                OriginalLabel.Position = UDim2.new(0, 0, 0, 52)
-                OriginalLabel.BackgroundTransparency = 1
-                OriginalLabel.Text = "Original"
-                OriginalLabel.TextColor3 = Library.Theme.Text
-                OriginalLabel.TextSize = 11
-                OriginalLabel.Font = Enum.Font.SourceSans
-                OriginalLabel.TextXAlignment = Enum.TextXAlignment.Left
-                OriginalLabel.ZIndex = 102
-                OriginalLabel.Parent = SwatchesFrame
-
-                local OriginalBox = Instance.new("Frame")
-                OriginalBox.Size = UDim2.new(1, 0, 0, 32)
-                OriginalBox.Position = UDim2.new(0, 0, 0, 67)
-                OriginalBox.BackgroundColor3 = originalColor
-                OriginalBox.BorderSizePixel = 0
-                OriginalBox.ZIndex = 102
-                OriginalBox.Parent = SwatchesFrame
-
-                -- RGB & HSV Readouts
-                local ReadoutFrame = Instance.new("Frame")
-                ReadoutFrame.Size = UDim2.new(1, 0, 0, 40)
-                ReadoutFrame.Position = UDim2.new(0, 0, 0, 126)
-                ReadoutFrame.BackgroundTransparency = 1
-                ReadoutFrame.ZIndex = 102
-                ReadoutFrame.Parent = PickerHolder
-
-                local function CreateReadout(name, position, size)
-                    local Box = Instance.new("TextBox")
-                    Box.Size = size
-                    Box.Position = position
-                    Box.BackgroundColor3 = Library.Theme.Background
-                    Box.TextColor3 = Library.Theme.Text
-                    Box.TextSize = 11
-                    Box.Font = Enum.Font.SourceSans
-                    Box.Text = name .. ": 0"
-                    Box.ClearTextOnFocus = false
-                    Box.ZIndex = 103
-                    Box.Parent = ReadoutFrame
-
-                    local Corner = Instance.new("UICorner")
-                    Corner.CornerRadius = UDim.new(0, 2)
-                    Corner.Parent = Box
-                    return Box
-                end
-
-                local rBox = CreateReadout("R", UDim2.new(0, 0, 0, 0), UDim2.new(0.31, 0, 0, 18))
-                local gBox = CreateReadout("G", UDim2.new(0.34, 0, 0, 0), UDim2.new(0.31, 0, 0, 18))
-                local bBox = CreateReadout("B", UDim2.new(0.68, 0, 0, 0), UDim2.new(0.32, 0, 0, 18))
-
-                local hBox = CreateReadout("H", UDim2.new(0, 0, 0, 21), UDim2.new(0.31, 0, 0, 18))
-                local sBox = CreateReadout("S", UDim2.new(0.34, 0, 0, 21), UDim2.new(0.31, 0, 0, 18))
-                local vBox = CreateReadout("V", UDim2.new(0.68, 0, 0, 21), UDim2.new(0.32, 0, 0, 18))
-
-                -- Hex Input
-                local HexBox = Instance.new("TextBox")
-                HexBox.Size = UDim2.new(1, 0, 0, 20)
-                HexBox.Position = UDim2.new(0, 0, 0, 172)
-                HexBox.BackgroundColor3 = Library.Theme.Background
-                HexBox.TextColor3 = Library.Theme.Text
-                HexBox.TextSize = 12
-                HexBox.Font = Enum.Font.SourceSans
-                HexBox.TextXAlignment = Enum.TextXAlignment.Left
-                HexBox.Text = "#" .. currentColor:ToHex()
-                HexBox.ZIndex = 103
-                HexBox.Parent = PickerHolder
-
-                local HexCorner = Instance.new("UICorner")
-                HexCorner.CornerRadius = UDim.new(0, 2)
-                HexCorner.Parent = HexBox
-
-                local h, s, v = currentColor:ToHSV()
-                local draggingHue, draggingSV, draggingAlpha = false, false, false
-
-                local AlphaBar, AlphaFill
-                if useAlpha then
-                    AlphaBar = Instance.new("TextButton")
-                    AlphaBar.Size = UDim2.new(1, 0, 0, 14)
-                    AlphaBar.Position = UDim2.new(0, 0, 0, 198)
-                    AlphaBar.BackgroundColor3 = Library.Theme.Background
-                    AlphaBar.AutoButtonColor = false
-                    AlphaBar.Text = ""
-                    AlphaBar.ZIndex = 102
-                    AlphaBar.Parent = PickerHolder
-
-                    local AlphaCorner = Instance.new("UICorner")
-                    AlphaCorner.CornerRadius = UDim.new(0, 2)
-                    AlphaCorner.Parent = AlphaBar
-
-                    AlphaFill = Instance.new("Frame")
-                    AlphaFill.Size = UDim2.new(currentAlpha, 0, 1, 0)
-                    AlphaFill.BackgroundColor3 = currentColor
-                    AlphaFill.BorderSizePixel = 0
-                    AlphaFill.ZIndex = 103
-                    AlphaFill.Parent = AlphaBar
-
-                    local FillCorner = Instance.new("UICorner")
-                    FillCorner.CornerRadius = UDim.new(0, 2)
-                    FillCorner.Parent = AlphaFill
-                end
-
-                local function UpdateColor(skipInputs)
-                    currentColor = Color3.fromHSV(h, s, v)
-                    ColorPreview.BackgroundColor3 = currentColor
-                    ColorPreview.BackgroundTransparency = 1 - currentAlpha
-                    CurrentBox.BackgroundColor3 = currentColor
-                    SVCanvas.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
-
-                    SVKnob.Position = UDim2.new(s, 0, 1 - v, 0)
-
-                    if not skipInputs then
-                        rBox.Text = "R: " .. math.floor(currentColor.R * 255)
-                        gBox.Text = "G: " .. math.floor(currentColor.G * 255)
-                        bBox.Text = "B: " .. math.floor(currentColor.B * 255)
-
-                        hBox.Text = "H: " .. math.floor(h * 360)
-                        sBox.Text = "S: " .. math.floor(s * 100)
-                        vBox.Text = "V: " .. math.floor(v * 100)
-
-                        HexBox.Text = "#" .. currentColor:ToHex():upper()
-                    end
-
-                    if useAlpha and AlphaFill then
-                        AlphaFill.BackgroundColor3 = currentColor
-                        AlphaFill.Size = UDim2.new(currentAlpha, 0, 1, 0)
-                        callback(currentColor, currentAlpha)
-                    else
-                        callback(currentColor)
-                    end
-                end
-
-                -- Input Connections
-                HueBar.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                        draggingHue = true
-                        local relativeY = math.clamp(input.Position.Y - HueBar.AbsolutePosition.Y, 0, HueBar.AbsoluteSize.Y)
-                        h = relativeY / HueBar.AbsoluteSize.Y
-                        UpdateColor()
-                    end
-                end)
-
-                SVCanvas.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                        draggingSV = true
-                        local relativeX = math.clamp(input.Position.X - SVCanvas.AbsolutePosition.X, 0, SVCanvas.AbsoluteSize.X)
-                        local relativeY = math.clamp(input.Position.Y - SVCanvas.AbsolutePosition.Y, 0, SVCanvas.AbsoluteSize.Y)
-                        s = relativeX / SVCanvas.AbsoluteSize.X
-                        v = 1 - (relativeY / SVCanvas.AbsoluteSize.Y)
-                        UpdateColor()
-                    end
-                end)
-
-                if useAlpha and AlphaBar then
-                    AlphaBar.InputBegan:Connect(function(input)
-                        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                            draggingAlpha = true
-                            local relativeX = math.clamp(input.Position.X - AlphaBar.AbsolutePosition.X, 0, AlphaBar.AbsoluteSize.X)
-                            currentAlpha = relativeX / AlphaBar.AbsoluteSize.X
-                            UpdateColor()
-                        end
-                    end)
-                end
-
-                HexBox.FocusLost:Connect(function()
-                    local hexStr = HexBox.Text:gsub("#", "")
-                    local success, result = pcall(function()
-                        return Color3.fromHex(hexStr)
-                    end)
-
-                    if success and result then
-                        currentColor = result
-                        h, s, v = currentColor:ToHSV()
-                        UpdateColor()
-                    else
-                        HexBox.Text = "#" .. currentColor:ToHex():upper()
-                    end
-                end)
-
-                UserInputService.InputChanged:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                        if draggingHue then
-                            local relativeY = math.clamp(input.Position.Y - HueBar.AbsolutePosition.Y, 0, HueBar.AbsoluteSize.Y)
-                            h = relativeY / HueBar.AbsoluteSize.Y
-                            UpdateColor()
-                        elseif draggingSV then
-                            local relativeX = math.clamp(input.Position.X - SVCanvas.AbsolutePosition.X, 0, SVCanvas.AbsoluteSize.X)
-                            local relativeY = math.clamp(input.Position.Y - SVCanvas.AbsolutePosition.Y, 0, SVCanvas.AbsoluteSize.Y)
-                            s = relativeX / SVCanvas.AbsoluteSize.X
-                            v = 1 - (relativeY / SVCanvas.AbsoluteSize.Y)
-                            UpdateColor()
-                        elseif draggingAlpha and useAlpha and AlphaBar then
-                            local relativeX = math.clamp(input.Position.X - AlphaBar.AbsolutePosition.X, 0, AlphaBar.AbsoluteSize.X)
-                            currentAlpha = relativeX / AlphaBar.AbsoluteSize.X
-                            UpdateColor()
-                        end
-                    end
-                end)
-
-                UserInputService.InputEnded:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                        draggingHue = false
-                        draggingSV = false
-                        draggingAlpha = false
-                    end
-                end)
-
-                UpdateColor()
-            end
-
-            ColorPreview.MouseButton1Click:Connect(OpenColorpickerWindow)
-        end
-
-        function Comp:AddTextbox(text, placeholderText, defaultText, callback)
 			callback = callback or function() end
+			flag = flag or text
+
+			local currentColor = defaultColor or Color3.fromRGB(255, 255, 255)
+			local originalColor = currentColor
+			local currentAlpha = math.clamp(defaultAlpha or 1, 0, 1)
+			Library.Flags[flag] = currentColor
+
+			local ColorpickerFrame = Instance.new("Frame")
+			ColorpickerFrame.Name = "ColorpickerFrame"
+			ColorpickerFrame.Size = UDim2.new(1, 0, 0, 32)
+			RegisterTheme(ColorpickerFrame, "BackgroundColor3", "Container")
+			ColorpickerFrame.ClipsDescendants = true
+			ColorpickerFrame.Parent = TargetContainer
+
+			local FrameCorner = Instance.new("UICorner")
+			FrameCorner.CornerRadius = UDim.new(0, 5)
+			FrameCorner.Parent = ColorpickerFrame
+
+			local Label = Instance.new("TextLabel")
+			Label.Size = UDim2.new(0.5, -10, 0, 32)
+			Label.Position = UDim2.new(0, 10, 0, 0)
+			Label.BackgroundTransparency = 1
+			Label.Text = text
+			RegisterTheme(Label, "TextColor3", "Text")
+			Label.TextSize = 13
+			Label.Font = Enum.Font.SourceSans
+			Label.TextXAlignment = Enum.TextXAlignment.Left
+			Label.Parent = ColorpickerFrame
+
+			local ColorPreview = Instance.new("TextButton")
+			ColorPreview.Size = UDim2.new(0, 45, 0, 20)
+			ColorPreview.Position = UDim2.new(1, -55, 0, 6)
+			ColorPreview.BackgroundColor3 = currentColor
+			ColorPreview.BackgroundTransparency = 1 - currentAlpha
+			ColorPreview.Text = ""
+			ColorPreview.AutoButtonColor = false
+			ColorPreview.Parent = ColorpickerFrame
+
+			local PreviewCorner = Instance.new("UICorner")
+			PreviewCorner.CornerRadius = UDim.new(0, 4)
+			PreviewCorner.Parent = ColorPreview
+
+			local function SetColor(newCol, newAlpha)
+				if type(newCol) == "table" and newCol.R then
+					newCol = Color3.new(newCol.R, newCol.G, newCol.B)
+				end
+
+				currentColor = newCol or Color3.fromRGB(255, 255, 255)
+				if newAlpha then currentAlpha = newAlpha end
+				Library.Flags[flag] = currentColor
+
+				ColorPreview.BackgroundColor3 = currentColor
+				ColorPreview.BackgroundTransparency = 1 - currentAlpha
+
+				if useAlpha then
+					callback(currentColor, currentAlpha)
+				else
+					callback(currentColor)
+				end
+			end
+
+			local function OpenColorpickerWindow()
+				if Library.ActiveColorpicker and Library.ActiveColorpicker.Name == "ColorpickerWindow_" .. text then
+					Library.ActiveColorpicker:Destroy()
+					Library.ActiveColorpicker = nil
+					return
+				end
+
+				if Library.ActiveColorpicker then
+					Library.ActiveColorpicker:Destroy()
+					Library.ActiveColorpicker = nil
+				end
+
+				local windowWidth, windowHeight = 260, useAlpha and 280 or 255
+				local ScreenGui = ColorpickerFrame:FindFirstAncestorWhichIsA("ScreenGui") or TargetContainer
+
+				local Window = Instance.new("Frame")
+				Window.Name = "ColorpickerWindow_" .. text
+				Window.Size = UDim2.new(0, windowWidth, 0, windowHeight)
+				Window.Position = UDim2.new(0.5, -windowWidth / 2, 0.5, -windowHeight / 2)
+				RegisterTheme(Window, "BackgroundColor3", "Container")
+				Window.BorderSizePixel = 0
+				Window.ZIndex = 100
+				Window.Parent = ScreenGui
+				
+				Library.ActiveColorpicker = Window
+
+				local WindowCorner = Instance.new("UICorner")
+				WindowCorner.CornerRadius = UDim.new(0, 6)
+				WindowCorner.Parent = Window
+
+				local TitleBar = Instance.new("Frame")
+				TitleBar.Size = UDim2.new(1, 0, 0, 28)
+				RegisterTheme(TitleBar, "BackgroundColor3", "Background")
+				TitleBar.BorderSizePixel = 0
+				TitleBar.ZIndex = 101
+				TitleBar.Parent = Window
+
+				local TitleCorner = Instance.new("UICorner")
+				TitleCorner.CornerRadius = UDim.new(0, 6)
+				TitleCorner.Parent = TitleBar
+
+				local TitleLabel = Instance.new("TextLabel")
+				TitleLabel.Size = UDim2.new(1, -30, 1, 0)
+				TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+				TitleLabel.BackgroundTransparency = 1
+				TitleLabel.Text = text .. " - Color Picker"
+				RegisterTheme(TitleLabel, "TextColor3", "Text")
+				TitleLabel.TextSize = 13
+				TitleLabel.Font = Enum.Font.SourceSansBold
+				TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+				TitleLabel.ZIndex = 102
+				TitleLabel.Parent = TitleBar
+
+				local CloseBtn = Instance.new("TextButton")
+				CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+				CloseBtn.Position = UDim2.new(1, -28, 0, 0)
+				CloseBtn.BackgroundTransparency = 1
+				CloseBtn.Text = "X"
+				RegisterTheme(CloseBtn, "TextColor3", "Text")
+				CloseBtn.TextSize = 12
+				CloseBtn.Font = Enum.Font.SourceSansBold
+				CloseBtn.ZIndex = 102
+				CloseBtn.Parent = TitleBar
+
+				CloseBtn.MouseButton1Click:Connect(function()
+					if Library.ActiveColorpicker == Window then
+						Library.ActiveColorpicker:Destroy()
+						Library.ActiveColorpicker = nil
+					else
+						Window:Destroy()
+					end
+				end)
+
+				local dragging, dragInput, dragStart, startPos
+				TitleBar.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						dragging = true
+						dragStart = input.Position
+						startPos = Window.Position
+						input.Changed:Connect(function()
+							if input.UserInputState == Enum.UserInputState.End then
+								dragging = false
+							end
+						end)
+					end
+				end)
+
+				TitleBar.InputChanged:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+						dragInput = input
+					end
+				end)
+
+				UserInputService.InputChanged:Connect(function(input)
+					if input == dragInput and dragging then
+						local delta = input.Position - dragStart
+						Window.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+					end
+				end)
+
+				local PickerHolder = Instance.new("Frame")
+				PickerHolder.Size = UDim2.new(1, -20, 1, -38)
+				PickerHolder.Position = UDim2.new(0, 10, 0, 32)
+				PickerHolder.BackgroundTransparency = 1
+				PickerHolder.ZIndex = 101
+				PickerHolder.Parent = Window
+
+				local SVCanvas = Instance.new("TextButton")
+				SVCanvas.Size = UDim2.new(0, 130, 0, 120)
+				SVCanvas.Position = UDim2.new(0, 0, 0, 0)
+				SVCanvas.BackgroundColor3 = currentColor
+				SVCanvas.AutoButtonColor = false
+				SVCanvas.Text = ""
+				SVCanvas.ZIndex = 102
+				SVCanvas.Parent = PickerHolder
+
+				local SVCorner = Instance.new("UICorner")
+				SVCorner.CornerRadius = UDim.new(0, 3)
+				SVCorner.Parent = SVCanvas
+
+				local ValueGradient = Instance.new("UIGradient")
+				ValueGradient.Rotation = 90
+				ValueGradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0))
+				ValueGradient.Parent = SVCanvas
+
+				local SVKnob = Instance.new("Frame")
+				SVKnob.Size = UDim2.new(0, 8, 0, 8)
+				SVKnob.AnchorPoint = Vector2.new(0.5, 0.5)
+				SVKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				SVKnob.BorderSizePixel = 0
+				SVKnob.ZIndex = 103
+				SVKnob.Parent = SVCanvas
+
+				local KnobCorner = Instance.new("UICorner")
+				KnobCorner.CornerRadius = UDim.new(1, 0)
+				KnobCorner.Parent = SVKnob
+
+				local HueBar = Instance.new("TextButton")
+				HueBar.Size = UDim2.new(0, 16, 0, 120)
+				HueBar.Position = UDim2.new(0, 136, 0, 0)
+				HueBar.AutoButtonColor = false
+				HueBar.Text = ""
+				HueBar.ZIndex = 102
+				HueBar.Parent = PickerHolder
+
+				local HueCorner = Instance.new("UICorner")
+				HueCorner.CornerRadius = UDim.new(0, 3)
+				HueCorner.Parent = HueBar
+
+				local HueGradient = Instance.new("UIGradient")
+				HueGradient.Rotation = 90
+				HueGradient.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
+					ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+					ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+					ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
+					ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+					ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+					ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 0, 0))
+				})
+				HueGradient.Parent = HueBar
+
+				local SwatchesFrame = Instance.new("Frame")
+				SwatchesFrame.Size = UDim2.new(1, -158, 0, 120)
+				SwatchesFrame.Position = UDim2.new(0, 158, 0, 0)
+				SwatchesFrame.BackgroundTransparency = 1
+				SwatchesFrame.ZIndex = 102
+				SwatchesFrame.Parent = PickerHolder
+
+				local CurrentLabel = Instance.new("TextLabel")
+				CurrentLabel.Size = UDim2.new(1, 0, 0, 14)
+				CurrentLabel.BackgroundTransparency = 1
+				CurrentLabel.Text = "Current"
+				RegisterTheme(CurrentLabel, "TextColor3", "Text")
+				CurrentLabel.TextSize = 11
+				CurrentLabel.Font = Enum.Font.SourceSans
+				CurrentLabel.TextXAlignment = Enum.TextXAlignment.Left
+				CurrentLabel.ZIndex = 102
+				CurrentLabel.Parent = SwatchesFrame
+
+				local CurrentBox = Instance.new("Frame")
+				CurrentBox.Size = UDim2.new(1, 0, 0, 32)
+				CurrentBox.Position = UDim2.new(0, 0, 0, 15)
+				CurrentBox.BackgroundColor3 = currentColor
+				CurrentBox.BorderSizePixel = 0
+				CurrentBox.ZIndex = 102
+				CurrentBox.Parent = SwatchesFrame
+
+				local OriginalLabel = Instance.new("TextLabel")
+				OriginalLabel.Size = UDim2.new(1, 0, 0, 14)
+				OriginalLabel.Position = UDim2.new(0, 0, 0, 52)
+				OriginalLabel.BackgroundTransparency = 1
+				OriginalLabel.Text = "Original"
+				RegisterTheme(OriginalLabel, "TextColor3", "Text")
+				OriginalLabel.TextSize = 11
+				OriginalLabel.Font = Enum.Font.SourceSans
+				OriginalLabel.TextXAlignment = Enum.TextXAlignment.Left
+				OriginalLabel.ZIndex = 102
+				OriginalLabel.Parent = SwatchesFrame
+
+				local OriginalBox = Instance.new("Frame")
+				OriginalBox.Size = UDim2.new(1, 0, 0, 32)
+				OriginalBox.Position = UDim2.new(0, 0, 0, 67)
+				OriginalBox.BackgroundColor3 = originalColor
+				OriginalBox.BorderSizePixel = 0
+				OriginalBox.ZIndex = 102
+				OriginalBox.Parent = SwatchesFrame
+
+				local ReadoutFrame = Instance.new("Frame")
+				ReadoutFrame.Size = UDim2.new(1, 0, 0, 40)
+				ReadoutFrame.Position = UDim2.new(0, 0, 0, 126)
+				ReadoutFrame.BackgroundTransparency = 1
+				ReadoutFrame.ZIndex = 102
+				ReadoutFrame.Parent = PickerHolder
+
+				local function CreateReadout(name, position, size)
+					local Box = Instance.new("TextBox")
+					Box.Size = size
+					Box.Position = position
+					RegisterTheme(Box, "BackgroundColor3", "Background")
+					RegisterTheme(Box, "TextColor3", "Text")
+					Box.TextSize = 11
+					Box.Font = Enum.Font.SourceSans
+					Box.Text = name .. ": 0"
+					Box.ClearTextOnFocus = false
+					Box.ZIndex = 103
+					Box.Parent = ReadoutFrame
+
+					local Corner = Instance.new("UICorner")
+					Corner.CornerRadius = UDim.new(0, 2)
+					Corner.Parent = Box
+					return Box
+				end
+
+				local rBox = CreateReadout("R", UDim2.new(0, 0, 0, 0), UDim2.new(0.31, 0, 0, 18))
+				local gBox = CreateReadout("G", UDim2.new(0.34, 0, 0, 0), UDim2.new(0.31, 0, 0, 18))
+				local bBox = CreateReadout("B", UDim2.new(0.68, 0, 0, 0), UDim2.new(0.32, 0, 0, 18))
+
+				local hBox = CreateReadout("H", UDim2.new(0, 0, 0, 21), UDim2.new(0.31, 0, 0, 18))
+				local sBox = CreateReadout("S", UDim2.new(0.34, 0, 0, 21), UDim2.new(0.31, 0, 0, 18))
+				local vBox = CreateReadout("V", UDim2.new(0.68, 0, 0, 21), UDim2.new(0.32, 0, 0, 18))
+
+				local HexBox = Instance.new("TextBox")
+				HexBox.Size = UDim2.new(1, 0, 0, 20)
+				HexBox.Position = UDim2.new(0, 0, 0, 172)
+				RegisterTheme(HexBox, "BackgroundColor3", "Background")
+				RegisterTheme(HexBox, "TextColor3", "Text")
+				HexBox.TextSize = 12
+				HexBox.Font = Enum.Font.SourceSans
+				HexBox.TextXAlignment = Enum.TextXAlignment.Left
+				HexBox.Text = "#" .. currentColor:ToHex()
+				HexBox.ZIndex = 103
+				HexBox.Parent = PickerHolder
+
+				local HexCorner = Instance.new("UICorner")
+				HexCorner.CornerRadius = UDim.new(0, 2)
+				HexCorner.Parent = HexBox
+
+				local h, s, v = currentColor:ToHSV()
+				local draggingHue, draggingSV, draggingAlpha = false, false, false
+
+				local AlphaBar, AlphaFill
+				if useAlpha then
+					AlphaBar = Instance.new("TextButton")
+					AlphaBar.Size = UDim2.new(1, 0, 0, 14)
+					AlphaBar.Position = UDim2.new(0, 0, 0, 198)
+					RegisterTheme(AlphaBar, "BackgroundColor3", "Background")
+					AlphaBar.AutoButtonColor = false
+					AlphaBar.Text = ""
+					AlphaBar.ZIndex = 102
+					AlphaBar.Parent = PickerHolder
+
+					local AlphaCorner = Instance.new("UICorner")
+					AlphaCorner.CornerRadius = UDim.new(0, 2)
+					AlphaCorner.Parent = AlphaBar
+
+					AlphaFill = Instance.new("Frame")
+					AlphaFill.Size = UDim2.new(currentAlpha, 0, 1, 0)
+					AlphaFill.BackgroundColor3 = currentColor
+					AlphaFill.BorderSizePixel = 0
+					AlphaFill.ZIndex = 103
+					AlphaFill.Parent = AlphaBar
+
+					local FillCorner = Instance.new("UICorner")
+					FillCorner.CornerRadius = UDim.new(0, 2)
+					FillCorner.Parent = AlphaFill
+				end
+
+				local function UpdateColor(skipInputs)
+					local newCol = Color3.fromHSV(h, s, v)
+					SetColor(newCol, currentAlpha)
+
+					CurrentBox.BackgroundColor3 = currentColor
+					SVCanvas.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+					SVKnob.Position = UDim2.new(s, 0, 1 - v, 0)
+
+					if not skipInputs then
+						rBox.Text = "R: " .. math.floor(currentColor.R * 255)
+						gBox.Text = "G: " .. math.floor(currentColor.G * 255)
+						bBox.Text = "B: " .. math.floor(currentColor.B * 255)
+
+						hBox.Text = "H: " .. math.floor(h * 360)
+						sBox.Text = "S: " .. math.floor(s * 100)
+						vBox.Text = "V: " .. math.floor(v * 100)
+
+						HexBox.Text = "#" .. currentColor:ToHex():upper()
+					end
+
+					if useAlpha and AlphaFill then
+						AlphaFill.BackgroundColor3 = currentColor
+						AlphaFill.Size = UDim2.new(currentAlpha, 0, 1, 0)
+					end
+				end
+
+				HueBar.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						draggingHue = true
+						local relativeY = math.clamp(input.Position.Y - HueBar.AbsolutePosition.Y, 0, HueBar.AbsoluteSize.Y)
+						h = relativeY / HueBar.AbsoluteSize.Y
+						UpdateColor()
+					end
+				end)
+
+				SVCanvas.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						draggingSV = true
+						local relativeX = math.clamp(input.Position.X - SVCanvas.AbsolutePosition.X, 0, SVCanvas.AbsoluteSize.X)
+						local relativeY = math.clamp(input.Position.Y - SVCanvas.AbsolutePosition.Y, 0, SVCanvas.AbsoluteSize.Y)
+						s = relativeX / SVCanvas.AbsoluteSize.X
+						v = 1 - (relativeY / SVCanvas.AbsoluteSize.Y)
+						UpdateColor()
+					end
+				end)
+
+				if useAlpha and AlphaBar then
+					AlphaBar.InputBegan:Connect(function(input)
+						if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+							draggingAlpha = true
+							local relativeX = math.clamp(input.Position.X - AlphaBar.AbsolutePosition.X, 0, AlphaBar.AbsoluteSize.X)
+							currentAlpha = relativeX / AlphaBar.AbsoluteSize.X
+							UpdateColor()
+						end
+					end)
+				end
+
+				HexBox.FocusLost:Connect(function()
+					local hexStr = HexBox.Text:gsub("#", "")
+					local success, result = pcall(function()
+						return Color3.fromHex(hexStr)
+					end)
+
+					if success and result then
+						currentColor = result
+						h, s, v = currentColor:ToHSV()
+						UpdateColor()
+					else
+						HexBox.Text = "#" .. currentColor:ToHex():upper()
+					end
+				end)
+
+				UserInputService.InputChanged:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+						if draggingHue then
+							local relativeY = math.clamp(input.Position.Y - HueBar.AbsolutePosition.Y, 0, HueBar.AbsoluteSize.Y)
+							h = relativeY / HueBar.AbsoluteSize.Y
+							UpdateColor()
+						elseif draggingSV then
+							local relativeX = math.clamp(input.Position.X - SVCanvas.AbsolutePosition.X, 0, SVCanvas.AbsoluteSize.X)
+							local relativeY = math.clamp(input.Position.Y - SVCanvas.AbsolutePosition.Y, 0, SVCanvas.AbsoluteSize.Y)
+							s = relativeX / SVCanvas.AbsoluteSize.X
+							v = 1 - (relativeY / SVCanvas.AbsoluteSize.Y)
+							UpdateColor()
+						elseif draggingAlpha and useAlpha and AlphaBar then
+							local relativeX = math.clamp(input.Position.X - AlphaBar.AbsolutePosition.X, 0, AlphaBar.AbsoluteSize.X)
+							currentAlpha = relativeX / AlphaBar.AbsoluteSize.X
+							UpdateColor()
+						end
+					end
+				end)
+
+				UserInputService.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						draggingHue = false
+						draggingSV = false
+						draggingAlpha = false
+					end
+				end)
+
+				UpdateColor()
+			end
+
+			ColorPreview.MouseButton1Click:Connect(OpenColorpickerWindow)
+
+			Library.Elements[flag] = { 
+				Set = function(self, newCol, newAlpha)
+					SetColor(newCol, newAlpha)
+				end 
+			}
+		end
+
+		function Comp:AddTextbox(text, placeholderText, defaultText, flag, callback)
+			if type(flag) == "function" then
+				callback = flag
+				flag = text
+			end
+			callback = callback or function() end
+			flag = flag or text
+
 			placeholderText = placeholderText or "Enter text..."
 			defaultText = defaultText or ""
+			Library.Flags[flag] = defaultText
 
 			local TextboxFrame = Instance.new("Frame")
 			TextboxFrame.Name = "TextboxFrame"
@@ -1107,7 +1290,6 @@ function Library:CreateWindow(titleText)
 			TextboxFrame.Parent = TargetContainer
 
 			local FrameCorner = Instance.new("UICorner")
-			FrameCorner.CornerRadius = UDim.new(0, 5)
 			FrameCorner.CornerRadius = UDim.new(0, 5)
 			FrameCorner.Parent = TextboxFrame
 
@@ -1139,6 +1321,12 @@ function Library:CreateWindow(titleText)
 			InputCorner.CornerRadius = UDim.new(0, 4)
 			InputCorner.Parent = InputBox
 
+			local function SetText(txt)
+				InputBox.Text = txt
+				Library.Flags[flag] = txt
+				callback(txt, true)
+			end
+
 			InputBox.Focused:Connect(function()
 				TweenService:Create(InputBox, TweenInfo.new(0.2), {
 					BackgroundColor3 = Library.Theme.Separator
@@ -1149,8 +1337,15 @@ function Library:CreateWindow(titleText)
 				TweenService:Create(InputBox, TweenInfo.new(0.2), {
 					BackgroundColor3 = Library.Theme.Background
 				}):Play()
+				Library.Flags[flag] = InputBox.Text
 				callback(InputBox.Text, enterPressed)
 			end)
+
+			Library.Elements[flag] = { 
+				Set = function(self, val)
+					SetText(val)
+				end 
+			}
 		end
 
 		return Comp
@@ -1227,7 +1422,7 @@ function Library:CreateWindow(titleText)
 			TitleLabel.Size = UDim2.new(1, 0, 0, 20)
 			TitleLabel.BackgroundTransparency = 1
 			TitleLabel.Text = subName
-			RegisterTheme(TitleLabel, "TextColor3", "Accent")
+			RegisterTheme(TitleLabel, "TextColor3", "Text")
 			TitleLabel.TextSize = 13
 			TitleLabel.Font = Enum.Font.SourceSansBold
 			TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1279,6 +1474,8 @@ function Library:CreateWindow(titleText)
 		Tab.Button = TabButton
 		Tab.PageFrame = PageFrame
 		table.insert(Window.Tabs, Tab)
+
+		AdjustWidthForTabs()
 
 		if #Window.Tabs == 1 then
 			task.spawn(function()
