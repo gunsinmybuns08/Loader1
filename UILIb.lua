@@ -19,6 +19,7 @@ Library.Theme = {
 
 Library.Keybinds = {}
 Library.ThemeObjects = {}
+Library.ActiveColorpicker = nil -- Tracks globally active color picker popup
 
 function Library:changeTheme(themeKey, newColor)
 	if Library.Theme[themeKey] then
@@ -65,16 +66,13 @@ function Library:CreateWindow(titleText)
 		windowVisible = true
 	}
 
-
-    
-
     function Library:drawRect(properties)
         local Rect = Instance.new("Frame")
         for i,v in pairs(properties) do
             Rect[i] = v
         end
-
     end
+
     function Library:drawText(properties)
         if element == "Text" or "text" or "label" then
              local text = Instance.new("TextLabel")
@@ -266,7 +264,6 @@ function Library:CreateWindow(titleText)
 			resizing = false
 		end
 	end)
-
 
 	local function CreateComponents(TargetContainer)
 		local Comp = {}
@@ -644,7 +641,6 @@ function Library:CreateWindow(titleText)
             local currentColor = defaultColor or Color3.fromRGB(255, 255, 255)
             local originalColor = currentColor
             local currentAlpha = math.clamp(defaultAlpha or 1, 0, 1)
-            local activeWindow = nil
 
             -- Main Compact Item Frame
             local ColorpickerFrame = Instance.new("Frame")
@@ -684,10 +680,17 @@ function Library:CreateWindow(titleText)
 
             -- Function to create popup window
             local function OpenColorpickerWindow()
-                if activeWindow then
-                    activeWindow:Destroy()
-                    activeWindow = nil
+                -- Check if this specific colorpicker window is already open
+                if Library.ActiveColorpicker and Library.ActiveColorpicker.Name == "ColorpickerWindow_" .. text then
+                    Library.ActiveColorpicker:Destroy()
+                    Library.ActiveColorpicker = nil
                     return
+                end
+
+                -- Close any active color picker before opening a new one
+                if Library.ActiveColorpicker then
+                    Library.ActiveColorpicker:Destroy()
+                    Library.ActiveColorpicker = nil
                 end
 
                 local windowWidth, windowHeight = 260, useAlpha and 280 or 255
@@ -704,7 +707,9 @@ function Library:CreateWindow(titleText)
                 Window.BorderSizePixel = 0
                 Window.ZIndex = 100
                 Window.Parent = ScreenGui
-                activeWindow = Window
+                
+                -- Set global reference
+                Library.ActiveColorpicker = Window
 
                 local WindowCorner = Instance.new("UICorner")
                 WindowCorner.CornerRadius = UDim.new(0, 6)
@@ -746,8 +751,12 @@ function Library:CreateWindow(titleText)
                 CloseBtn.Parent = TitleBar
 
                 CloseBtn.MouseButton1Click:Connect(function()
-                    Window:Destroy()
-                    activeWindow = nil
+                    if Library.ActiveColorpicker == Window then
+                        Library.ActiveColorpicker:Destroy()
+                        Library.ActiveColorpicker = nil
+                    else
+                        Window:Destroy()
+                    end
                 end)
 
                 -- Dragging system for TitleBar
