@@ -1,20 +1,241 @@
-Library.Theme -- Background Container ContentBackground Separator Accent Text MutedText font
-Library:changeTheme(themeKey, newColor)
+================================================================================
+                        CUSTOM UI LIBRARY DOCUMENTATION
+================================================================================
+
+
+
+--------------------------------------------------------------------------------
+LIBRARY SETUP
+--------------------------------------------------------------------------------
+
+The library initializes with a default dark theme and built-in global keybind 
+listeners.
+
+Properties:
+- Library.Theme (Table): Default color palette.
+- Library.Flags (Table): Key-value store of component values keyed by flag name.
+- Library.Elements (Table): Component handle references used for programmatically 
+  updating state.
+
+
+--------------------------------------------------------------------------------
+WINDOW MANAGEMENT
+--------------------------------------------------------------------------------
+
 Library:CreateWindow(titleText)
-Library:drawRect(properties)
-Library:drawText(properties)
+Creates a new draggable and resizable UI window.
+
+local Window = Library:CreateWindow("My Custom Interface")
+
+Window Methods:
+
+- Window:Toggle()
+  Toggles the visibility of the main window frame. 
+  Returns the new visibility state (boolean).
+
+- Window:isWindowOpen()
+  Returns whether the window is currently open (boolean).
+
+
+--------------------------------------------------------------------------------
+TABS & SUB-SECTIONS
+--------------------------------------------------------------------------------
 
 Window:CreateTab(tabName)
-Window:Toggle()
-Window:isWindowOpen()
+Creates a top tab within the window.
+
+local MainTab = Window:CreateTab("Main")
 
 Tab:CreateSubSection(subName)
+Creates a visually distinct card/sub-section container inside a tab. Component 
+methods can be called directly on the subsection.
 
-Section:Spacing(height)
-Section:AddButton(text, callback)
-Section:AddToggle(text, defaultState, callback)
-Section:AddKeybind(text, defaultKey, callback)
-Section:AddSlider(text, min, max, default, callback)
-Section:AddDropdown(text, options, defaultOption, callback)
-Section:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, callback)
-Section:AddTextbox(text, placeholderText, defaultText, callback)
+local MovementSection = MainTab:CreateSubSection("Movement Features")
+
+
+--------------------------------------------------------------------------------
+UI COMPONENTS
+--------------------------------------------------------------------------------
+
+All components below can be added to a Tab or a SubSection.
+
+--- 1. Button ---
+AddButton(text, callback)
+
+MainTab:AddButton("Print Hello", function()
+    print("Hello, world!")
+end)
+
+--- 2. Toggle ---
+AddToggle(text, defaultState, flag, callback)
+* Note: flag is optional. If omitted, text will be used as the flag key.
+
+MainTab:AddToggle("WalkSpeed Boost", false, "SpeedToggle", function(state)
+    print("Toggle State:", state)
+end)
+
+--- 3. Slider ---
+AddSlider(text, min, max, default, flag, callback)
+
+MainTab:AddSlider("WalkSpeed", 16, 200, 16, "SpeedSlider", function(value)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+end)
+
+--- 4. Keybind ---
+AddKeybind(text, defaultKey, flag, callback)
+* Accepts Enum.KeyCode or Enum.UserInputType.
+
+MainTab:AddKeybind("Teleport Key", Enum.KeyCode.E, "TPKey", function(key)
+    print("Key pressed:", key)
+end)
+
+--- 5. Dropdown ---
+AddDropdown(text, optionsTable, defaultOption, flag, callback)
+
+MainTab:AddDropdown("Select Mode", {"Mode A", "Mode B", "Mode C"}, "Mode A", "ModeDropdown", function(selected)
+    print("Selected option:", selected)
+end)
+
+--- 6. Textbox ---
+AddTextbox(text, placeholderText, defaultText, flag, callback)
+* callback(text, enterPressed): Fires on focus lost.
+
+MainTab:AddTextbox("Custom Name", "Type here...", "Default", "NameTextbox", function(txt, enterPressed)
+    print("Submitted text:", txt, "Enter Pressed:", enterPressed)
+end)
+
+--- 7. Colorpicker ---
+AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
+* Full RGB/HSV picker window with optional alpha channel slider and hexadecimal support.
+
+-- Standard Colorpicker
+MainTab:AddColorpicker("Accent Color", Color3.fromRGB(0, 162, 255), false, 1, "AccentPicker", function(color)
+    print("Color selected:", color)
+end)
+
+-- Colorpicker with Alpha/Opacity
+MainTab:AddColorpicker("Box Color", Color3.fromRGB(255, 0, 0), true, 0.5, "BoxColorPicker", function(color, alpha)
+    print("Color:", color, "Alpha:", alpha)
+end)
+
+
+--------------------------------------------------------------------------------
+CONFIG SYSTEM
+--------------------------------------------------------------------------------
+
+The library contains built-in JSON serialization for Color3 and EnumItem types 
+using writefile / readfile.
+
+Library:SaveConfig(fileName)
+Saves all Library.Flags values into a JSON file in your executor workspace (filename.json).
+
+Library:SaveConfig("my_config")
+
+Library:LoadConfig(fileName)
+Loads values from the file and updates all matching UI element states via element:Set(value).
+
+Library:LoadConfig("my_config")
+
+Library:DeleteConfig(fileName)
+Deletes the specified config file.
+
+Library:DeleteConfig("my_config")
+
+
+--------------------------------------------------------------------------------
+THEME SYSTEM
+--------------------------------------------------------------------------------
+
+Library:changeTheme(themeKey, newColor)
+Dynamically updates a theme property and updates registered UI elements in real-time.
+
+Valid Theme Keys:
+- "Background"
+- "Container"
+- "ContentBackground"
+- "Separator"
+- "Accent"
+- "Text"
+- "MutedText"
+
+Library:changeTheme("Accent", Color3.fromRGB(255, 100, 0))
+
+
+--------------------------------------------------------------------------------
+COMPLETE USAGE EXAMPLE
+--------------------------------------------------------------------------------
+
+local Library = loadstring(game:HttpGet("YOUR_LIBRARY_URL"))()
+
+local Window = Library:CreateWindow("Control Panel")
+local MainTab = Window:CreateTab("General")
+
+local Section = MainTab:CreateSubSection("Player Settings")
+
+Section:AddToggle("Enable Speed", false, "Speed_Toggle", function(enabled)
+    print("Speed toggle:", enabled)
+end)
+
+Section:AddSlider("Speed Value", 16, 100, 16, "Speed_Value", function(val)
+    print("New speed:", val)
+end)
+
+Section:AddKeybind("UI Toggle", Enum.KeyCode.RightShift, "UI_Toggle_Key", function()
+    Window:Toggle()
+end)
+
+local ConfigSection = MainTab:CreateSubSection("Config Manager")
+
+ConfigSection:AddButton("Save Config", function()
+    Library:SaveConfig("default")
+end)
+
+ConfigSection:AddButton("Load Config", function()
+    Library:LoadConfig("default")
+end)
+
+
+AIMBOTLIB------------
+- enabled             : (boolean) Master toggle [default: true]
+- keybind             : (Enum.KeyCode) Keybind used to activate targeting [default: Enum.KeyCode.E]
+- triggerMode         : (string) "Hold" or "Toggle" [default: "Hold"]
+- aimMode             : (string) "Mouse" or "Camera" [default: "Mouse"]
+- targetSelectionMode : (string) "FOV" or "Distance" [default: "FOV"]
+- fovRadius           : (number) Pixel radius for FOV mode [default: 200]
+- maxDistance         : (number) Max 3D distance in studs [default: 2000]
+- smooth              : (boolean) Enables smooth easing [default: true]
+- smoothTime          : (number) Interpolation factor [default: 0.15]
+- sensitivity         : (number) Mouse sensitivity multiplier [default: 1]
+- targetHitbox        : (string) Target body part [default: "Head"]
+- teamCheck           : (boolean) Enable team filtering [default: false]
+- checkTeamColor      : (boolean) Check TeamColor equality [default: false]
+- targetNeutral       : (boolean) Allow targeting teamless players [default: false]
+
+2. FOV VISUALIZATION SETTINGS
+--------------------------------------------------
+- showFOV             : (boolean) Show on-screen FOV ring [default: true]
+- fovColor            : (Color3) RGB color of the ring [default: 0, 255, 150]
+- fovThickness        : (number) Pixel thickness of outline [default: 1.5]
+- fovTransparency     : (number) Opacity (0 to 1) [default: 0.7]
+- fovFilled           : (boolean) Render filled circle [default: false]
+
+3. PUBLIC METHODS
+--------------------------------------------------
+- Aimbot:Init()
+  Connects RenderStepped and Input listeners. Safe for re-initialization.
+
+- Aimbot:Toggle(state)
+  Parameters: state (boolean, optional)
+  Toggles or forces active aiming state.
+
+- Aimbot:getClosestPlr()
+  Returns: Player or nil
+  Evaluates and returns best target based on active selection mode.
+
+- Aimbot:IsEnemy(player)
+  Parameters: player (Player)
+  Returns: boolean
+  Validates player existence, health (>0), and team parameters.
+
+- Aimbot:Destroy()
+  Disconnects all events, stops RenderStepped, and cleans up FOV drawings.
