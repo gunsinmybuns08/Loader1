@@ -42,13 +42,14 @@ local function RegisterTheme(guiObject, propertyName, themeKey)
 	})
 end
 
+-- FIXED: Added type check for keybind.Callback to prevent non-function errors
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 
 	local pressedKey = (input.UserInputType == Enum.UserInputType.Keyboard) and input.KeyCode or input.UserInputType
 
 	for _, keybind in ipairs(Library.Keybinds) do
-		if keybind.Key == pressedKey and keybind.Callback then
+		if keybind.Key == pressedKey and type(keybind.Callback) == "function" then
 			task.spawn(keybind.Callback, pressedKey)
 		end
 	end
