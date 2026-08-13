@@ -5,6 +5,8 @@ Library:drawRect(properties)
 Library:drawText(properties)
 
 Window:CreateTab(tabName)
+Window:Toggle()
+Window:isWindowOpen()
 
 Tab:CreateSubSection(subName)
 
