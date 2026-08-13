@@ -1352,141 +1352,141 @@ function Library:CreateWindow(titleText)
 	end
 
 	function Window:CreateTab(tabName)
-	    local Tab = {}
-	
-	    local TabButton = Instance.new("TextButton")
-	    TabButton.Name = tabName .. "TabButton"
-	    TabButton.Size = UDim2.new(0, 100, 1, -3)
-	    -- FIX: Changed from "Container" to "Background" so tab buttons don't turn purple when Container color changes
-	    RegisterTheme(TabButton, "BackgroundColor3", "Background") 
-	    TabButton.Text = tabName
-	    RegisterTheme(TabButton, "TextColor3", "MutedText")
-	    TabButton.TextSize = 13
-	    TabButton.Font = Enum.Font.SourceSansBold
-	    TabButton.AutoButtonColor = false
-	    TabButton.Parent = TabBar
-	
-	    local TabBtnCorner = Instance.new("UICorner")
-	    TabBtnCorner.CornerRadius = UDim.new(0, 5)
-	    TabBtnCorner.Parent = TabButton
-	
-	    local PageFrame = Instance.new("Frame")
-	    PageFrame.Name = tabName .. "PageFrame"
-	    PageFrame.Size = UDim2.new(1, 0, 1, 0)
-	    PageFrame.BackgroundTransparency = 1
-	    PageFrame.Visible = false
-	    PageFrame.Parent = PageContainer
-	
-	    local MainScroll = Instance.new("ScrollingFrame")
-	    MainScroll.Name = tabName .. "MainScroll"
-	    MainScroll.Size = UDim2.new(1, 0, 1, 0)
-	    MainScroll.BackgroundTransparency = 1
-	    MainScroll.BorderSizePixel = 0
-	    MainScroll.ScrollBarThickness = 4
-	    MainScroll.Parent = PageFrame
-	
-	    local MainScrollLayout = Instance.new("UIListLayout")
-	    MainScrollLayout.Padding = UDim.new(0, 10)
-	    MainScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	    MainScrollLayout.Parent = MainScroll
-	
-	    MainScrollLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	        MainScroll.CanvasSize = UDim2.new(0, 0, 0, MainScrollLayout.AbsoluteContentSize.Y + 10)
-	    end)
-	
-	    local BaseComponents = CreateComponents(MainScroll)
-	    for k, v in pairs(BaseComponents) do
-	        Tab[k] = v
-	    end
-	
-	    function Tab:CreateSubSection(subName)
-	        local CardFrame = Instance.new("Frame")
-	        CardFrame.Name = subName .. "Card"
-	        CardFrame.Size = UDim2.new(1, -6, 0, 0)
-	        RegisterTheme(CardFrame, "BackgroundColor3", "Background")
-	        CardFrame.BorderSizePixel = 0
-	        CardFrame.Parent = MainScroll
-	
-	        local CardCorner = Instance.new("UICorner")
-	        CardCorner.CornerRadius = UDim.new(0, 6)
-	        CardCorner.Parent = CardFrame
-	
-	        local CardPadding = Instance.new("UIPadding")
-	        CardPadding.PaddingTop = UDim.new(0, 8)
-	        CardPadding.PaddingBottom = UDim.new(0, 8)
-	        CardPadding.PaddingLeft = UDim.new(0, 8)
-	        CardPadding.PaddingRight = UDim.new(0, 8)
-	        CardPadding.Parent = CardFrame
-	
-	        local TitleLabel = Instance.new("TextLabel")
-	        TitleLabel.Name = "CardTitle"
-	        TitleLabel.Size = UDim2.new(1, 0, 0, 20)
-	        TitleLabel.BackgroundTransparency = 1
-	        TitleLabel.Text = subName
-	        -- FIX: Explicitly set to "Text" so it matches regular text and ignores Accent
-	        RegisterTheme(TitleLabel, "TextColor3", "Text")
-	        TitleLabel.TextSize = 13
-	        TitleLabel.Font = Enum.Font.SourceSansBold
-	        TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	        TitleLabel.Parent = CardFrame
-	
-	        local ElementsHolder = Instance.new("Frame")
-	        ElementsHolder.Name = "ElementsHolder"
-	        ElementsHolder.Size = UDim2.new(1, 0, 0, 0)
-	        ElementsHolder.Position = UDim2.new(0, 0, 0, 24)
-	        ElementsHolder.BackgroundTransparency = 1
-	        ElementsHolder.Parent = CardFrame
-	
-	        local ElementsLayout = Instance.new("UIListLayout")
-	        ElementsLayout.Padding = UDim.new(0, 6)
-	        ElementsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	        ElementsLayout.Parent = ElementsHolder
-	
-	        ElementsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	            ElementsHolder.Size = UDim2.new(1, 0, 0, ElementsLayout.AbsoluteContentSize.Y)
-	            CardFrame.Size = UDim2.new(1, -6, 0, ElementsLayout.AbsoluteContentSize.Y + 36)
-	        end)
-	
-	        local SubSection = CreateComponents(ElementsHolder)
-	        SubSection.Container = CardFrame
-	
-	        return SubSection
-	    end
-	
-	    local function SelectTab()
-	        for _, t in pairs(Window.Tabs) do
-	            t.PageFrame.Visible = false
-	            TweenService:Create(t.Button, TweenInfo.new(0.2), {
-	                TextColor3 = Library.Theme.MutedText
-	            }):Play()
-	        end
-	
-	        PageFrame.Visible = true
-	        
-	        TweenService:Create(TabButton, TweenInfo.new(0.2), {
-	            TextColor3 = Library.Theme.Text
-	        }):Play()
-	
-	        Window.ActiveTab = Tab
-	        UpdateActiveLine()
-	    end
-	
-	    TabButton.MouseButton1Click:Connect(SelectTab)
-	
-	    Tab.Button = TabButton
-	    Tab.PageFrame = PageFrame
-	    table.insert(Window.Tabs, Tab)
-	
-	    AdjustWidthForTabs()
-	
-	    if #Window.Tabs == 1 then
-	        task.spawn(function()
-	            task.wait()
-	            SelectTab()
-	        end)
-	    end
-	
-	    return Tab
+		local Tab = {}
+
+		local TabButton = Instance.new("TextButton")
+		TabButton.Name = tabName .. "TabButton"
+		TabButton.Size = UDim2.new(0, 100, 1, -3)
+		RegisterTheme(TabButton, "BackgroundColor3", "Container")
+		TabButton.Text = tabName
+		RegisterTheme(TabButton, "TextColor3", "MutedText")
+		TabButton.TextSize = 13
+		TabButton.Font = Enum.Font.SourceSansBold
+		TabButton.AutoButtonColor = false
+		TabButton.Parent = TabBar
+
+		local TabBtnCorner = Instance.new("UICorner")
+		TabBtnCorner.CornerRadius = UDim.new(0, 5)
+		TabBtnCorner.Parent = TabButton
+
+		local PageFrame = Instance.new("Frame")
+		PageFrame.Name = tabName .. "PageFrame"
+		PageFrame.Size = UDim2.new(1, 0, 1, 0)
+		PageFrame.BackgroundTransparency = 1
+		PageFrame.Visible = false
+		PageFrame.Parent = PageContainer
+
+		local MainScroll = Instance.new("ScrollingFrame")
+		MainScroll.Name = tabName .. "MainScroll"
+		MainScroll.Size = UDim2.new(1, 0, 1, 0)
+		MainScroll.BackgroundTransparency = 1
+		MainScroll.BorderSizePixel = 0
+		MainScroll.ScrollBarThickness = 4
+		MainScroll.Parent = PageFrame
+
+		local MainScrollLayout = Instance.new("UIListLayout")
+		MainScrollLayout.Padding = UDim.new(0, 10)
+		MainScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		MainScrollLayout.Parent = MainScroll
+
+		MainScrollLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+			MainScroll.CanvasSize = UDim2.new(0, 0, 0, MainScrollLayout.AbsoluteContentSize.Y + 10)
+		end)
+
+		local BaseComponents = CreateComponents(MainScroll)
+		for k, v in pairs(BaseComponents) do
+			Tab[k] = v
+		end
+
+		function Tab:CreateSubSection(subName)
+			local CardFrame = Instance.new("Frame")
+			CardFrame.Name = subName .. "Card"
+			CardFrame.Size = UDim2.new(1, -6, 0, 0)
+			RegisterTheme(CardFrame, "BackgroundColor3", "Background")
+			CardFrame.BorderSizePixel = 0
+			CardFrame.Parent = MainScroll
+
+			local CardCorner = Instance.new("UICorner")
+			CardCorner.CornerRadius = UDim.new(0, 6)
+			CardCorner.Parent = CardFrame
+
+			local CardPadding = Instance.new("UIPadding")
+			CardPadding.PaddingTop = UDim.new(0, 8)
+			CardPadding.PaddingBottom = UDim.new(0, 8)
+			CardPadding.PaddingLeft = UDim.new(0, 8)
+			CardPadding.PaddingRight = UDim.new(0, 8)
+			CardPadding.Parent = CardFrame
+
+			local TitleLabel = Instance.new("TextLabel")
+			TitleLabel.Name = "CardTitle"
+			TitleLabel.Size = UDim2.new(1, 0, 0, 20)
+			TitleLabel.BackgroundTransparency = 1
+			TitleLabel.Text = subName
+			RegisterTheme(TitleLabel, "TextColor3", "Text")
+			TitleLabel.TextSize = 13
+			TitleLabel.Font = Enum.Font.SourceSansBold
+			TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+			TitleLabel.Parent = CardFrame
+
+			local ElementsHolder = Instance.new("Frame")
+			ElementsHolder.Name = "ElementsHolder"
+			ElementsHolder.Size = UDim2.new(1, 0, 0, 0)
+			ElementsHolder.Position = UDim2.new(0, 0, 0, 24)
+			ElementsHolder.BackgroundTransparency = 1
+			ElementsHolder.Parent = CardFrame
+
+			local ElementsLayout = Instance.new("UIListLayout")
+			ElementsLayout.Padding = UDim.new(0, 6)
+			ElementsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+			ElementsLayout.Parent = ElementsHolder
+
+			ElementsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+				ElementsHolder.Size = UDim2.new(1, 0, 0, ElementsLayout.AbsoluteContentSize.Y)
+				CardFrame.Size = UDim2.new(1, -6, 0, ElementsLayout.AbsoluteContentSize.Y + 36)
+			end)
+
+			local SubSection = CreateComponents(ElementsHolder)
+			SubSection.Container = CardFrame
+
+			return SubSection
+		end
+
+		local function SelectTab()
+			for _, t in pairs(Window.Tabs) do
+				t.PageFrame.Visible = false
+				TweenService:Create(t.Button, TweenInfo.new(0.2), {
+					TextColor3 = Library.Theme.MutedText
+				}):Play()
+			end
+
+			PageFrame.Visible = true
+			
+			TweenService:Create(TabButton, TweenInfo.new(0.2), {
+				TextColor3 = Library.Theme.Text
+			}):Play()
+
+			Window.ActiveTab = Tab
+			UpdateActiveLine()
+		end
+
+		TabButton.MouseButton1Click:Connect(SelectTab)
+
+		Tab.Button = TabButton
+		Tab.PageFrame = PageFrame
+		table.insert(Window.Tabs, Tab)
+
+		AdjustWidthForTabs()
+
+		if #Window.Tabs == 1 then
+			task.spawn(function()
+				task.wait()
+				SelectTab()
+			end)
+		end
+
+		return Tab
+	end
+
 	return Window
 end
 
