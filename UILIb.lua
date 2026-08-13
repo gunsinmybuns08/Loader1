@@ -73,14 +73,16 @@ function Library:CreateWindow(titleText)
         end
     end
 
-    function Library:drawText(properties)
-        if element == "Text" or "text" or "label" then
-             local text = Instance.new("TextLabel")
-            for i,v in pairs(properties) do
-                text[i] = v
-            end
-    	end
-    end
+	function Library:drawText(element, properties)
+	    local elementName = tostring(element)
+	    if elementName == "text" or elementName == "label" then
+	        local text = Instance.new("TextLabel")
+	        for i, v in pairs(properties) do
+	            text[i] = v
+	        end
+	        return text
+	    end
+	end
 
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Name = "MainFrame"
