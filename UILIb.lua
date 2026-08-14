@@ -162,7 +162,7 @@ function Library:CreateWindow(titleText)
 	MainFrame.Size = UDim2.new(0, Window.BaseWidth, 0, Window.BaseHeight)
 	MainFrame.Position = UDim2.new(0.5, -Window.BaseWidth / 2, 0.5, -Window.BaseHeight / 2)
 	RegisterTheme(MainFrame, "BackgroundColor3", "Background")
-	MainFrame.BorderSizePixel = 1
+    MainFrame.BorderSizePixel = 0
 	MainFrame.Active = true
 	MainFrame.ClipsDescendants = true
 	MainFrame.Parent = ScreenGui
@@ -213,10 +213,6 @@ function Library:CreateWindow(titleText)
 		self.windowVisible = MainFrame.Visible
 		return self.windowVisible
 	end
-	
-	local UICorner = Instance.new("UICorner")
-	UICorner.CornerRadius = UDim.new(0, 2)
-	UICorner.Parent = MainFrame
 	
 	local Title = Instance.new("TextLabel")
 	Title.Size = UDim2.new(1, -20, 0, 35)
@@ -269,7 +265,7 @@ function Library:CreateWindow(titleText)
 	ContentFrame.Size = UDim2.new(1, -20, 1, -85)
 	ContentFrame.Position = UDim2.new(0, 10, 0, 78)
 	RegisterTheme(ContentFrame, "BackgroundColor3", "ContentBackground")
-	ContentFrame.BorderSizePixel = 1
+	ContentFrame.BorderSizePixel = 0
 	ContentFrame.Parent = MainFrame
 
 	local ContentCorner = Instance.new("UICorner")
@@ -412,6 +408,7 @@ function Library:CreateWindow(titleText)
 			local ToggleFrame = Instance.new("Frame")
 			ToggleFrame.Size = UDim2.new(1, 0, 0, 32)
 			RegisterTheme(ToggleFrame, "BackgroundColor3", "Container")
+			ToggleFrame.Transparency = 0
 			ToggleFrame.Parent = TargetContainer
 			
 			local ToggleCorner = Instance.new("UICorner")
@@ -420,7 +417,7 @@ function Library:CreateWindow(titleText)
 			
 			local Label = Instance.new("TextLabel")
 			Label.Size = UDim2.new(1, -50, 1, 0)
-			Label.Position = UDim2.new(0, 10, 0, 0)
+			Label.Position = UDim2.new(0, 35, 0, 0)
 			Label.BackgroundTransparency = 1
 			Label.Text = text
 			RegisterTheme(Label, "TextColor3", "Text")
@@ -430,14 +427,11 @@ function Library:CreateWindow(titleText)
 			Label.Parent = ToggleFrame
 			
 			local Indicator = Instance.new("Frame")
-			Indicator.Size = UDim2.new(0, 18, 0, 18)
-			Indicator.Position = UDim2.new(1, -26, 0.5, -9)
+			Indicator.Size = UDim2.new(0, 15, 0, 15)
+			Indicator.Position = UDim2.new(0, 10, 0.5, -7) -- Fixed left offset
 			RegisterTheme(Indicator, "BackgroundColor3", toggled and "Accent" or "Background")
+            Indicator.BorderSizePixel = 0
 			Indicator.Parent = ToggleFrame
-			
-			local IndCorner = Instance.new("UICorner")
-			IndCorner.CornerRadius = UDim.new(0, 4)
-			IndCorner.Parent = Indicator
 			
 			local ClickArea = Instance.new("TextButton")
 			ClickArea.Size = UDim2.new(1, 0, 1, 0)
@@ -1351,7 +1345,7 @@ function Library:CreateWindow(titleText)
 		return Comp
 	end
 
-	function Window:CreateTab(tabName)
+    function Window:CreateTab(tabName)
 		local Tab = {}
 
 		local TabButton = Instance.new("TextButton")
@@ -1384,27 +1378,73 @@ function Library:CreateWindow(titleText)
 		MainScroll.ScrollBarThickness = 4
 		MainScroll.Parent = PageFrame
 
-		local MainScrollLayout = Instance.new("UIListLayout")
-		MainScrollLayout.Padding = UDim.new(0, 10)
-		MainScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		MainScrollLayout.Parent = MainScroll
+		-- Container setup for 2 distinct fixed-width columns
+		local ColumnHolder = Instance.new("Frame")
+		ColumnHolder.Name = "ColumnHolder"
+		ColumnHolder.Size = UDim2.new(1, 0, 1, 0)
+		ColumnHolder.BackgroundTransparency = 1
+		ColumnHolder.Parent = MainScroll
 
-		MainScrollLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-			MainScroll.CanvasSize = UDim2.new(0, 0, 0, MainScrollLayout.AbsoluteContentSize.Y + 10)
-		end)
+		local HolderLayout = Instance.new("UIListLayout")
+		HolderLayout.FillDirection = Enum.FillDirection.Horizontal
+		HolderLayout.Padding = UDim.new(0, 8)
+		HolderLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		HolderLayout.Parent = ColumnHolder
+
+		-- FIXED WIDTH LEFT COLUMN (200px)
+		local LeftColumn = Instance.new("Frame")
+		LeftColumn.Name = "LeftColumn"
+		LeftColumn.Size = UDim2.new(0, 200, 0, 0) -- Fixed width 200
+		LeftColumn.BackgroundTransparency = 1
+		LeftColumn.Parent = ColumnHolder
+
+		local LeftLayout = Instance.new("UIListLayout")
+		LeftLayout.Padding = UDim.new(0, 8)
+		LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		LeftLayout.Parent = LeftColumn
+
+		-- FIXED WIDTH RIGHT COLUMN (200px)
+		local RightColumn = Instance.new("Frame")
+		RightColumn.Name = "RightColumn"
+		RightColumn.Size = UDim2.new(0, 200, 0, 0) -- Fixed width 200
+		RightColumn.BackgroundTransparency = 1
+		RightColumn.Parent = ColumnHolder
+
+		local RightLayout = Instance.new("UIListLayout")
+		RightLayout.Padding = UDim.new(0, 8)
+		RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		RightLayout.Parent = RightColumn
+
+		-- Update scroll canvas vertically
+		local function UpdateCanvas()
+			local leftH = LeftLayout.AbsoluteContentSize.Y
+			local rightH = RightLayout.AbsoluteContentSize.Y
+			local maxH = math.max(leftH, rightH)
+			MainScroll.CanvasSize = UDim2.new(0, 0, 0, maxH + 10)
+		end
+
+		LeftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
+		RightLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
 
 		local BaseComponents = CreateComponents(MainScroll)
 		for k, v in pairs(BaseComponents) do
 			Tab[k] = v
 		end
 
-		function Tab:CreateSubSection(subName)
+		local subCount = 0
+		function Tab:CreateSubSection(subName, forceColumn)
+			subCount = subCount + 1
+			local targetCol = LeftColumn
+			if forceColumn == "Right" or (not forceColumn and subCount % 2 == 0) then
+				targetCol = RightColumn
+			end
+
 			local CardFrame = Instance.new("Frame")
 			CardFrame.Name = subName .. "Card"
-			CardFrame.Size = UDim2.new(1, -6, 0, 0)
+			CardFrame.Size = UDim2.new(1, 0, 0, 36) -- Fills the fixed 200px column width perfectly
 			RegisterTheme(CardFrame, "BackgroundColor3", "Background")
 			CardFrame.BorderSizePixel = 0
-			CardFrame.Parent = MainScroll
+			CardFrame.Parent = targetCol
 
 			local CardCorner = Instance.new("UICorner")
 			CardCorner.CornerRadius = UDim.new(0, 6)
@@ -1440,9 +1480,11 @@ function Library:CreateWindow(titleText)
 			ElementsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 			ElementsLayout.Parent = ElementsHolder
 
+			-- Card height dynamically adjusts based on added elements, keeping width strictly fixed
 			ElementsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-				ElementsHolder.Size = UDim2.new(1, 0, 0, ElementsLayout.AbsoluteContentSize.Y)
-				CardFrame.Size = UDim2.new(1, -6, 0, ElementsLayout.AbsoluteContentSize.Y + 36)
+				local newContentHeight = ElementsLayout.AbsoluteContentSize.Y
+				ElementsHolder.Size = UDim2.new(1, 0, 0, newContentHeight)
+				CardFrame.Size = UDim2.new(1, 0, 0, newContentHeight + 40)
 			end)
 
 			local SubSection = CreateComponents(ElementsHolder)
