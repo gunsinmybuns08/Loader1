@@ -162,7 +162,7 @@ function Library:CreateWindow(titleText)
 	MainFrame.Size = UDim2.new(0, Window.BaseWidth, 0, Window.BaseHeight)
 	MainFrame.Position = UDim2.new(0.5, -Window.BaseWidth / 2, 0.5, -Window.BaseHeight / 2)
 	RegisterTheme(MainFrame, "BackgroundColor3", "Background")
-	MainFrame.BorderSizePixel = 0
+	MainFrame.BorderSizePixel = 1
 	MainFrame.Active = true
 	MainFrame.ClipsDescendants = true
 	MainFrame.Parent = ScreenGui
@@ -215,7 +215,7 @@ function Library:CreateWindow(titleText)
 	end
 	
 	local UICorner = Instance.new("UICorner")
-	UICorner.CornerRadius = UDim.new(0, 4)
+	UICorner.CornerRadius = UDim.new(0, 2)
 	UICorner.Parent = MainFrame
 	
 	local Title = Instance.new("TextLabel")
@@ -269,11 +269,11 @@ function Library:CreateWindow(titleText)
 	ContentFrame.Size = UDim2.new(1, -20, 1, -85)
 	ContentFrame.Position = UDim2.new(0, 10, 0, 78)
 	RegisterTheme(ContentFrame, "BackgroundColor3", "ContentBackground")
-	ContentFrame.BorderSizePixel = 0
+	ContentFrame.BorderSizePixel = 1
 	ContentFrame.Parent = MainFrame
 
 	local ContentCorner = Instance.new("UICorner")
-	ContentCorner.CornerRadius = UDim.new(0, 6)
+	ContentCorner.CornerRadius = UDim.new(0, 3)
 	ContentCorner.Parent = ContentFrame
 
 	local PageContainer = Instance.new("Frame")
