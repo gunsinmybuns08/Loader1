@@ -35,6 +35,7 @@ Aimbot.Config = {
     targetNeutral = false,
     
     targetHitbox = "Head",
+    subFolderName = "PLAYERS",   -- Folder inside Workspace containing character models
     enabled = true
 }
 
@@ -98,22 +99,24 @@ function Aimbot:IsEnemy(player)
     return player.Team ~= LocalPlayer.Team
 end
 
-local targetFolder = workspace:FindFirstChild("PLAYERS") -- Replace with your folder name
-
+-- Target selection algorithm using Method 1
 function Aimbot:getClosestPlr()
     local localRoot = getLocalRootPart()
-    if not localRoot or not targetFolder then return nil end
+    if not localRoot then return nil end
+
+    -- Look for the specified subfolder inside Workspace
+    local targetFolder = Workspace:FindFirstChild(self.Config.subFolderName)
+    if not targetFolder then return nil end
 
     local closestDistance = math.huge
     local closestPlayer = nil
     local mouseLocation = UserInputService:GetMouseLocation()
 
-    -- Iterate through character models inside the subfolder
+    -- Iterate through character models directly inside the subfolder
     for _, character in ipairs(targetFolder:GetChildren()) do
-        -- Find the corresponding Player object from the character model
+        -- Convert character Model to Player object
         local player = Players:GetPlayerFromCharacter(character)
-        
-        -- If it's a valid player and passes your checks
+
         if player and self:IsEnemy(player) then
             local targetPart = getTargetPart(player, self.Config.targetHitbox)
 
