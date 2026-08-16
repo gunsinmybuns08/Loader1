@@ -277,14 +277,26 @@ end
 local function removePlayerESP(targetPlayer)
     if ActiveESP[targetPlayer] then
         local entry = ActiveESP[targetPlayer]
-        if entry.Connection then entry.Connection:Disconnect() end
-        for k, v in pairs(entry.Objects) do
+        
+        -- Disconnect loop first
+        if entry.Connection then 
+            entry.Connection:Disconnect() 
+            entry.Connection = nil
+        end
+        
+        -- Force hide and destroy drawing objects
+        for _, v in pairs(entry.Objects) do
             if type(v) == "table" then
-                for _, line in ipairs(v) do line:Remove() end
+                for _, line in ipairs(v) do 
+                    line.Visible = false
+                    line:Remove() 
+                end
             else
+                v.Visible = false
                 v:Remove()
             end
         end
+        
         ActiveESP[targetPlayer] = nil
     end
 end
@@ -300,14 +312,24 @@ function ESP:Init()
 end
 
 function ESP:Unload()
+    -- Disconnect global connections
     for _, conn in ipairs(Connections) do
         conn:Disconnect()
     end
     table.clear(Connections)
 
+    -- Collect players to prevent table modification during iteration
+    local targets = {}
     for plr in pairs(ActiveESP) do
+        table.insert(targets, plr)
+    end
+
+    -- Clean up each player safely
+    for _, plr in ipairs(targets) do
         removePlayerESP(plr)
     end
+    
+    table.clear(ActiveESP)
 end
 
 return ESP
