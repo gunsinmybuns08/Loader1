@@ -198,6 +198,154 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
+function Library:Notify(options)
+	options = options or {}
+	local titleText = options.Title or "Notification"
+	local messageText = options.Text or ""
+	local duration = options.Duration or 0 -- 0 means it won't auto-close
+	local callback = options.Callback or function() end -- Returns true for Yes, false for No
+
+	local windowWidth, windowHeight = 280, options.YesNo and 130 or 110
+	local parentGui = ScreenGui -- Uses your library's ScreenGui container
+
+	local NotifyFrame = Instance.new("Frame")
+	NotifyFrame.Name = "NotificationWindow"
+	NotifyFrame.Size = UDim2.new(0, windowWidth, 0, windowHeight)
+	NotifyFrame.Position = UDim2.new(0.5, -windowWidth / 2, 0.5, -windowHeight / 2)
+	RegisterTheme(NotifyFrame, "BackgroundColor3", "Container")
+	NotifyFrame.BorderSizePixel = 0
+	NotifyFrame.ZIndex = 200
+	NotifyFrame.Parent = parentGui
+
+	local FrameCorner = Instance.new("UICorner")
+	FrameCorner.CornerRadius = UDim.new(0, 6)
+	FrameCorner.Parent = NotifyFrame
+
+	-- Title Bar
+	local TitleBar = Instance.new("Frame")
+	TitleBar.Size = UDim2.new(1, 0, 0, 28)
+	RegisterTheme(TitleBar, "BackgroundColor3", "Background")
+	TitleBar.BorderSizePixel = 0
+	TitleBar.ZIndex = 201
+	TitleBar.Parent = NotifyFrame
+
+	local TitleCorner = Instance.new("UICorner")
+	TitleCorner.CornerRadius = UDim.new(0, 6)
+	TitleCorner.Parent = TitleBar
+
+	local TitleLabel = Instance.new("TextLabel")
+	TitleLabel.Size = UDim2.new(1, -30, 1, 0)
+	TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+	TitleLabel.BackgroundTransparency = 1
+	TitleLabel.Text = titleText
+	RegisterTheme(TitleLabel, "TextColor3", "Text")
+	TitleLabel.TextSize = 13
+	TitleLabel.Font = Enum.Font.SourceSansBold
+	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	TitleLabel.ZIndex = 202
+	TitleLabel.Parent = TitleBar
+
+	local CloseBtn = Instance.new("TextButton")
+	CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+	CloseBtn.Position = UDim2.new(1, -28, 0, 0)
+	CloseBtn.BackgroundTransparency = 1
+	CloseBtn.Text = "X"
+	RegisterTheme(CloseBtn, "TextColor3", "Text")
+	CloseBtn.TextSize = 12
+	CloseBtn.Font = Enum.Font.SourceSansBold
+	CloseBtn.ZIndex = 202
+	CloseBtn.Parent = TitleBar
+
+	local function CloseWindow()
+		if NotifyFrame and NotifyFrame.Parent then
+			NotifyFrame:Destroy()
+		end
+	end
+
+	CloseBtn.MouseButton1Click:Connect(CloseWindow)
+
+	-- Message Text
+	local MessageLabel = Instance.new("TextLabel")
+	MessageLabel.Size = UDim2.new(1, -20, 0, 35)
+	MessageLabel.Position = UDim2.new(0, 10, 0, 34)
+	MessageLabel.BackgroundTransparency = 1
+	MessageLabel.Text = messageText
+	RegisterTheme(MessageLabel, "TextColor3", "Text")
+	MessageLabel.TextSize = 13
+	MessageLabel.Font = Enum.Font.SourceSans
+	MessageLabel.TextWrapped = true
+	MessageLabel.ZIndex = 201
+	MessageLabel.Parent = NotifyFrame
+
+	-- Action Buttons
+	if options.YesNo then
+		local YesBtn = Instance.new("TextButton")
+		YesBtn.Size = UDim2.new(0.45, 0, 0, 26)
+		YesBtn.Position = UDim2.new(0.04, 0, 1, -34)
+		RegisterTheme(YesBtn, "BackgroundColor3", "Accent")
+		YesBtn.Text = "Yes"
+		RegisterTheme(YesBtn, "TextColor3", "Text")
+		YesBtn.TextSize = 12
+		YesBtn.Font = Enum.Font.SourceSansBold
+		YesBtn.ZIndex = 201
+		YesBtn.Parent = NotifyFrame
+
+		local YesCorner = Instance.new("UICorner")
+		YesCorner.CornerRadius = UDim.new(0, 4)
+		YesCorner.Parent = YesBtn
+
+		local NoBtn = Instance.new("TextButton")
+		NoBtn.Size = UDim2.new(0.45, 0, 0, 26)
+		NoBtn.Position = UDim2.new(0.51, 0, 1, -34)
+		RegisterTheme(NoBtn, "BackgroundColor3", "Background")
+		NoBtn.Text = "No"
+		RegisterTheme(NoBtn, "TextColor3", "Text")
+		NoBtn.TextSize = 12
+		NoBtn.Font = Enum.Font.SourceSansBold
+		NoBtn.ZIndex = 201
+		NoBtn.Parent = NotifyFrame
+
+		local NoCorner = Instance.new("UICorner")
+		NoCorner.CornerRadius = UDim.new(0, 4)
+		NoCorner.Parent = NoBtn
+
+		YesBtn.MouseButton1Click:Connect(function()
+			CloseWindow()
+			callback(true)
+		end)
+
+		NoBtn.MouseButton1Click:Connect(function()
+			CloseWindow()
+			callback(false)
+		end)
+	else
+		local OkBtn = Instance.new("TextButton")
+		OkBtn.Size = UDim2.new(0.92, 0, 0, 24)
+		OkBtn.Position = UDim2.new(0.04, 0, 1, -30)
+		RegisterTheme(OkBtn, "BackgroundColor3", "Background")
+		OkBtn.Text = "OK"
+		RegisterTheme(OkBtn, "TextColor3", "Text")
+		OkBtn.TextSize = 12
+		OkBtn.Font = Enum.Font.SourceSansBold
+		OkBtn.ZIndex = 201
+		OkBtn.Parent = NotifyFrame
+
+		local OkCorner = Instance.new("UICorner")
+		OkCorner.CornerRadius = UDim.new(0, 4)
+		OkCorner.Parent = OkBtn
+
+		OkBtn.MouseButton1Click:Connect(CloseWindow)
+	end
+
+	-- Auto Close Timer
+	if duration > 0 then
+		task.delay(duration, function()
+			CloseWindow()
+		end)
+	end
+end
+
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CustomUILibrary"
 ScreenGui.ResetOnSpawn = false
