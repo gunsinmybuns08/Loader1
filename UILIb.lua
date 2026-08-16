@@ -108,6 +108,27 @@ function Library:LoadConfig(fileName)
 	end
 end
 
+function Library:GetConfigs()
+	local configs = {}
+	
+	-- Check if the executor supports directory listing
+	if not listfiles then
+		warn("[Library Config]: Your executor does not support 'listfiles'.")
+		return configs
+	end
+
+	local files = listfiles("") or {}
+	for _, path in ipairs(files) do
+		-- Handle different path formats returned by various executors
+		local fileName = path:match("([^/\\]+)%.json$")
+		if fileName then
+			table.insert(configs, fileName)
+		end
+	end
+
+	return configs
+end
+
 function Library:DeleteConfig(fileName)
 	fileName = fileName or "default_config"
 	local path = fileName .. ".json"
