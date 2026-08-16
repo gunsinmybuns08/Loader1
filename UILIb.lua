@@ -216,6 +216,7 @@ function Library:CreateWindow(titleText)
 	
 	    if self.windowVisible then
 	        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	        UserInputService.MouseIconEnabled = true
 	    end
 	
 	    return self.windowVisible
@@ -1539,6 +1540,7 @@ function Library:CreateWindow(titleText)
 	RunService.RenderStepped:Connect(function()
 	    if Window.windowVisible then
 	        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	        UserInputService.MouseIconEnabled = true
 	    end
 	end)
 	
