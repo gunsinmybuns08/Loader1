@@ -204,22 +204,34 @@ end)
 
 
 
+--------------------------------------------------------------------------------
+-- SCREEN GUI CONTAINER (Move above Notify so it exists in scope)
+--------------------------------------------------------------------------------
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CustomUILibrary"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 999999999
 ScreenGui.IgnoreGuiInset = true
-ScreenGui.Parent = PlayerGui
+
+-- Protect parent assignment if running before PlayerGui loads
+pcall(function()
+	ScreenGui.Parent = PlayerGui
+end)
+
+--------------------------------------------------------------------------------
+-- NOTIFICATION SYSTEM
+--------------------------------------------------------------------------------
 
 function Library:Notify(options)
 	options = options or {}
 	local titleText = options.Title or "Notification"
 	local messageText = options.Text or ""
-	local duration = options.Duration or 0 -- 0 means it won't auto-close
-	local callback = options.Callback or function() end -- Returns true for Yes, false for No
+	local duration = options.Duration or 0
+	local callback = options.Callback or function() end
 
 	local windowWidth, windowHeight = 280, options.YesNo and 130 or 110
-	local parentGui = ScreenGui -- Uses your library's ScreenGui container
+	local parentGui = ScreenGui or PlayerGui:FindFirstChild("CustomUILibrary")
 
 	local NotifyFrame = Instance.new("Frame")
 	NotifyFrame.Name = "NotificationWindow"
