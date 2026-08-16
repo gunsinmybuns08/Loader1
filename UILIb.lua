@@ -343,8 +343,8 @@ function Library:CreateWindow(titleText)
 		local targetWidth = math.max(requiredWidthForTabs, requiredWidthForContent, Window.BaseWidth)
 		local targetHeight = math.max((contentHeight or 0) + 101, Window.BaseHeight)
 
+		-- Update size without resetting MainFrame.Position
 		MainFrame.Size = UDim2.new(0, targetWidth, 0, targetHeight)
-		MainFrame.Position = UDim2.new(0.5, -targetWidth / 2, 0.5, -targetHeight / 2)
 	end
 
 	local ResizeHandle = Instance.new("TextButton")
