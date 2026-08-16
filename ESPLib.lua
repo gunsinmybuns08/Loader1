@@ -3,19 +3,17 @@ ESP.__index = ESP
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local uis = game:GetService("UserInputService")
-
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- Default Settings
 ESP.Settings = {
-    Enabled = false,
-    Boxes = false,
-    Names = false,
-    HealthBars = false,
-    Skeletons = false,
-    HeadDots = false,
+    Enabled = true,
+    Boxes = true,
+    Names = true,
+    HealthBars = true,
+    Skeletons = true,
+    HeadDots = true,
     
     BoxColor = Color3.fromRGB(255, 255, 255),
     OutlineColor = Color3.fromRGB(10, 10, 10),
@@ -147,10 +145,9 @@ local function createPlayerESP(targetPlayer)
 
                 -- Boxes
                 if ESP.Settings.Boxes then
-                    local topLeft = Vector2.new(minX, minY)
-                    local topRight = Vector2.new(maxX, minY)
-                    local bottomLeft = Vector2.new(minX, maxY)
-                    local bottomRight = Vector2.new(maxX, maxY)
+                    local minVec, maxVec = Vector2.new(minX, minY), Vector2.new(maxX, maxY)
+                    local topLeft, topRight = Vector2.new(minX, minY), Vector2.new(maxX, minY)
+                    local bottomLeft, bottomRight = Vector2.new(minX, maxY), Vector2.new(maxX, maxY)
 
                     objects.Top.From, objects.Top.To = topLeft, topRight
                     objects.Left.From, objects.Left.To = topLeft, bottomLeft
@@ -172,23 +169,15 @@ local function createPlayerESP(targetPlayer)
                     objects.RightOutline.Color = ESP.Settings.OutlineColor
                     objects.BottomOutline.Color = ESP.Settings.OutlineColor
 
-                    objects.Top.Visible = true
-                    objects.Left.Visible = true
-                    objects.Right.Visible = true
-                    objects.Bottom.Visible = true
-                    objects.TopOutline.Visible = true
-                    objects.LeftOutline.Visible = true
-                    objects.RightOutline.Visible = true
-                    objects.BottomOutline.Visible = true
+                    objects.Top.Visible, objects.Left.Visible = true, true
+                    objects.Right.Visible, objects.Bottom.Visible = true, true
+                    objects.TopOutline.Visible, objects.LeftOutline.Visible = true, true
+                    objects.RightOutline.Visible, objects.BottomOutline.Visible = true, true
                 else
-                    objects.Top.Visible = false
-                    objects.Left.Visible = false
-                    objects.Right.Visible = false
-                    objects.Bottom.Visible = false
-                    objects.TopOutline.Visible = false
-                    objects.LeftOutline.Visible = false
-                    objects.RightOutline.Visible = false
-                    objects.BottomOutline.Visible = false
+                    objects.Top.Visible, objects.Left.Visible = false, false
+                    objects.Right.Visible, objects.Bottom.Visible = false, false
+                    objects.TopOutline.Visible, objects.LeftOutline.Visible = false, false
+                    objects.RightOutline.Visible, objects.BottomOutline.Visible = false, false
                 end
 
                 -- Health Bar
@@ -266,18 +255,13 @@ local function createPlayerESP(targetPlayer)
             end
         end
 
-        -- Explicitly hide all elements when disabled, off-screen, or dead
+        -- Hide elements when off-screen or dead
         objects.Name.Visible = false
-        objects.Top.Visible = false
-        objects.Left.Visible = false
-        objects.Right.Visible = false
-        objects.Bottom.Visible = false
-        objects.TopOutline.Visible = false
-        objects.LeftOutline.Visible = false
-        objects.RightOutline.Visible = false
-        objects.BottomOutline.Visible = false
-        objects.HealthBg.Visible = false
-        objects.HealthFill.Visible = false
+        objects.Top.Visible, objects.Left.Visible = false, false
+        objects.Right.Visible, objects.Bottom.Visible = false, false
+        objects.TopOutline.Visible, objects.LeftOutline.Visible = false, false
+        objects.RightOutline.Visible, objects.BottomOutline.Visible = false, false
+        objects.HealthBg.Visible, objects.HealthFill.Visible = false, false
         objects.HeadDot.Visible = false
         for _, line in ipairs(objects.Skeleton) do
             line.Visible = false
@@ -294,50 +278,31 @@ local function removePlayerESP(targetPlayer)
     if ActiveESP[targetPlayer] then
         local entry = ActiveESP[targetPlayer]
         
-        -- Disconnect loop
+        -- Disconnect loop first
         if entry.Connection then 
             entry.Connection:Disconnect() 
             entry.Connection = nil
         end
         
-        -- Hide and remove drawing objects
-        for _, obj in pairs(entry.Objects) do
-            if type(obj) == "table" then
-                for _, line in ipairs(obj) do 
+        -- Force hide and destroy drawing objects
+        for key, v in pairs(entry.Objects) do
+            if type(v) == "table" then
+                for _, line in ipairs(v) do 
                     line.Visible = false
                     line:Remove() 
                 end
             else
-                obj.Visible = false
-                obj:Remove()
+                v.Visible = false
+                v:Remove()
             end
         end
         
+        entry.Objects = nil
         ActiveESP[targetPlayer] = nil
     end
 end
 
 -- Library Methods
-function ESP:Unload()
-    -- Disconnect player added/removing connections
-    for _, conn in ipairs(Connections) do
-        conn:Disconnect()
-    end
-    table.clear(Connections)
-
-    -- Safely clear active drawings
-    local targets = {}
-    for plr in pairs(ActiveESP) do
-        table.insert(targets, plr)
-    end
-
-    for _, plr in ipairs(targets) do
-        removePlayerESP(plr)
-    end
-    
-    table.clear(ActiveESP)
-end
-
 function ESP:Init()
     ESP:Unload()
 
@@ -349,5 +314,25 @@ function ESP:Init()
     table.insert(Connections, Players.PlayerRemoving:Connect(removePlayerESP))
 end
 
+function ESP:Unload()
+    -- Disconnect global connections
+    for _, conn in ipairs(Connections) do
+        conn:Disconnect()
+    end
+    table.clear(Connections)
+
+    -- Collect players to prevent table modification during iteration
+    local targets = {}
+    for plr in pairs(ActiveESP) do
+        table.insert(targets, plr)
+    end
+
+    -- Clean up each player safely
+    for _, plr in ipairs(targets) do
+        removePlayerESP(plr)
+    end
+    
+    table.clear(ActiveESP)
+end
 
 return ESP
