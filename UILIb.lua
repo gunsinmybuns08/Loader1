@@ -211,9 +211,14 @@ function Library:CreateWindow(titleText)
 	end
 
 	function Window:Toggle()
-		MainFrame.Visible = not MainFrame.Visible
-		self.windowVisible = MainFrame.Visible
-		return self.windowVisible
+	    MainFrame.Visible = not MainFrame.Visible
+	    self.windowVisible = MainFrame.Visible
+	
+	    if self.windowVisible then
+	        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	    end
+	
+	    return self.windowVisible
 	end
 	
 	local Title = Instance.new("TextLabel")
@@ -1530,7 +1535,13 @@ function Library:CreateWindow(titleText)
 
 		return Tab
 	end
-
+	
+	RunService.RenderStepped:Connect(function()
+	    if Window.windowVisible then
+	        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	    end
+	end)
+	
 	return Window
 end
 
