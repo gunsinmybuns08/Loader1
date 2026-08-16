@@ -129,6 +129,30 @@ function Library:GetConfigs()
 	return configs
 end
 
+function Library:RefreshConfigs(targetDropdown, callback)
+	local configs = Library:GetConfigs()
+	
+	-- Update a target dropdown element if passed
+	if targetDropdown then
+		if typeof(targetDropdown) == "string" and Library.Elements[targetDropdown] then
+			targetDropdown = Library.Elements[targetDropdown]
+		end
+
+		if targetDropdown.RefreshOptions then
+			targetDropdown:RefreshOptions(configs)
+		elseif targetDropdown.SetOptions then
+			targetDropdown:SetOptions(configs)
+		end
+	end
+
+	-- Execute an optional callback returning the fetched configuration list
+	if type(callback) == "function" then
+		callback(configs)
+	end
+
+	return configs
+end
+
 function Library:DeleteConfig(fileName)
 	fileName = fileName or "default_config"
 	local path = fileName .. ".json"
