@@ -142,6 +142,8 @@ end)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CustomUILibrary"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 999999999
+ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = PlayerGui
 
 --------------------------------------------------------------------------------
@@ -166,7 +168,6 @@ function Library:CreateWindow(titleText)
 	MainFrame.Active = true
 	MainFrame.ClipsDescendants = true
 	MainFrame.Parent = ScreenGui
-	MainFrame.ZIndex = 50
 
 	local dragging, dragInput, dragStart, startPos
 	local gui = MainFrame
