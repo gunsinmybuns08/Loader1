@@ -202,6 +202,15 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 
+
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CustomUILibrary"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 999999999
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = PlayerGui
+
 function Library:Notify(options)
 	options = options or {}
 	local titleText = options.Title or "Notification"
@@ -349,13 +358,6 @@ function Library:Notify(options)
 	end
 end
 
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "CustomUILibrary"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.DisplayOrder = 999999999
-ScreenGui.IgnoreGuiInset = true
-ScreenGui.Parent = PlayerGui
 
 --------------------------------------------------------------------------------
 -- WINDOW CREATION
