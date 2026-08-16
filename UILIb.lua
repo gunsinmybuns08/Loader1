@@ -1538,12 +1538,7 @@ function Library:CreateWindow(titleText)
 		return Tab
 	end
 	
-	RunService.RenderStepped:Connect(function()
-	    if Window.windowVisible then
-	        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-	        UserInputService.MouseIconEnabled = true
-	    end
-	end)
+
 	
 	return Window
 end
