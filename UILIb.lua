@@ -753,23 +753,23 @@ function Library:CreateWindow(titleText)
 			end
 			callback = callback or function() end
 			flag = flag or text
-
+		
 			options = options or {}
 			local selected = defaultOption or options[1] or "Select..."
 			Library.Flags[flag] = selected
 			local open = false
-
+		
 			local DropdownFrame = Instance.new("Frame")
 			DropdownFrame.Name = "DropdownFrame"
 			DropdownFrame.Size = UDim2.new(1, 0, 0, 32)
 			RegisterTheme(DropdownFrame, "BackgroundColor3", "Container")
 			DropdownFrame.ClipsDescendants = true
 			DropdownFrame.Parent = TargetContainer
-
+		
 			local DropdownCorner = Instance.new("UICorner")
 			DropdownCorner.CornerRadius = UDim.new(0, 5)
 			DropdownCorner.Parent = DropdownFrame
-
+		
 			local Label = Instance.new("TextLabel")
 			Label.Size = UDim2.new(0.5, -10, 0, 32)
 			Label.Position = UDim2.new(0, 10, 0, 0)
@@ -780,7 +780,7 @@ function Library:CreateWindow(titleText)
 			Label.Font = Enum.Font.SourceSans
 			Label.TextXAlignment = Enum.TextXAlignment.Left
 			Label.Parent = DropdownFrame
-
+		
 			local SelectedButton = Instance.new("TextButton")
 			SelectedButton.Size = UDim2.new(0.5, -10, 0, 22)
 			SelectedButton.Position = UDim2.new(0.5, 0, 0, 5)
@@ -791,82 +791,115 @@ function Library:CreateWindow(titleText)
 			SelectedButton.Font = Enum.Font.SourceSansBold
 			SelectedButton.AutoButtonColor = false
 			SelectedButton.Parent = DropdownFrame
-
+		
 			local SelectedCorner = Instance.new("UICorner")
 			SelectedCorner.CornerRadius = UDim.new(0, 4)
 			SelectedCorner.Parent = SelectedButton
-
+		
 			local OptionsHolder = Instance.new("Frame")
 			OptionsHolder.Name = "OptionsHolder"
-			OptionsHolder.Size = UDim2.new(1, -20, 0, #options * 25)
+			OptionsHolder.Size = UDim2.new(1, -20, 0, 0)
 			OptionsHolder.Position = UDim2.new(0, 10, 0, 35)
 			OptionsHolder.BackgroundTransparency = 1
 			OptionsHolder.Parent = DropdownFrame
-
+		
 			local OptionsLayout = Instance.new("UIListLayout")
 			OptionsLayout.Padding = UDim.new(0, 3)
 			OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 			OptionsLayout.Parent = OptionsHolder
-
-			local function ToggleDropdown()
-				open = not open
-				local targetHeight = open and (35 + (#options * 28)) or 32
+		
+			local DropdownObj = {}
+		
+			local function ToggleDropdown(forceState)
+				if forceState ~= nil then
+					open = forceState
+				else
+					open = not open
+				end
+				local targetHeight = open and (35 + (#options * 25)) or 32
 				SelectedButton.Text = selected .. (open and "  ▲" or "  ▼")
-
+		
 				TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 					Size = UDim2.new(1, 0, 0, targetHeight)
 				}):Play()
 			end
-
+		
 			local function SetSelected(option)
-				selected = option
+				selected = option or "None"
 				Library.Flags[flag] = selected
 				SelectedButton.Text = selected .. (open and "  ▲" or "  ▼")
 				callback(selected)
 			end
-
-			SelectedButton.MouseButton1Click:Connect(ToggleDropdown)
-
-			for _, option in ipairs(options) do
-				local OptionBtn = Instance.new("TextButton")
-				OptionBtn.Size = UDim2.new(1, 0, 0, 22)
-				RegisterTheme(OptionBtn, "BackgroundColor3", "Background")
-				OptionBtn.Text = option
-				RegisterTheme(OptionBtn, "TextColor3", "MutedText")
-				OptionBtn.TextSize = 12
-				OptionBtn.Font = Enum.Font.SourceSans
-				OptionBtn.AutoButtonColor = false
-				OptionBtn.Parent = OptionsHolder
-
-				local OptionCorner = Instance.new("UICorner")
-				OptionCorner.CornerRadius = UDim.new(0, 4)
-				OptionCorner.Parent = OptionBtn
-
-				OptionBtn.MouseEnter:Connect(function()
-					TweenService:Create(OptionBtn, TweenInfo.new(0.15), {
-						BackgroundColor3 = Library.Theme.Accent,
-						TextColor3 = Library.Theme.Text
-					}):Play()
-				end)
-
-				OptionBtn.MouseLeave:Connect(function()
-					TweenService:Create(OptionBtn, TweenInfo.new(0.15), {
-						BackgroundColor3 = Library.Theme.Background,
-						TextColor3 = Library.Theme.MutedText
-					}):Play()
-				end)
-
-				OptionBtn.MouseButton1Click:Connect(function()
-					SetSelected(option)
-					ToggleDropdown()
-				end)
+		
+			local function BuildOptions()
+				for _, child in ipairs(OptionsHolder:GetChildren()) do
+					if child:IsA("TextButton") then
+						child:Destroy()
+					end
+				end
+		
+				OptionsHolder.Size = UDim2.new(1, -20, 0, #options * 25)
+		
+				for _, option in ipairs(options) do
+					local OptionBtn = Instance.new("TextButton")
+					OptionBtn.Size = UDim2.new(1, 0, 0, 22)
+					RegisterTheme(OptionBtn, "BackgroundColor3", "Background")
+					OptionBtn.Text = option
+					RegisterTheme(OptionBtn, "TextColor3", "MutedText")
+					OptionBtn.TextSize = 12
+					OptionBtn.Font = Enum.Font.SourceSans
+					OptionBtn.AutoButtonColor = false
+					OptionBtn.Parent = OptionsHolder
+		
+					local OptionCorner = Instance.new("UICorner")
+					OptionCorner.CornerRadius = UDim.new(0, 4)
+					OptionCorner.Parent = OptionBtn
+		
+					OptionBtn.MouseEnter:Connect(function()
+						TweenService:Create(OptionBtn, TweenInfo.new(0.15), {
+							BackgroundColor3 = Library.Theme.Accent,
+							TextColor3 = Library.Theme.Text
+						}):Play()
+					end)
+		
+					OptionBtn.MouseLeave:Connect(function()
+						TweenService:Create(OptionBtn, TweenInfo.new(0.15), {
+							BackgroundColor3 = Library.Theme.Background,
+							TextColor3 = Library.Theme.MutedText
+						}):Play()
+					end)
+		
+					OptionBtn.MouseButton1Click:Connect(function()
+						SetSelected(option)
+						ToggleDropdown(false)
+					end)
+				end
 			end
-
-			Library.Elements[flag] = { 
-				Set = function(self, val)
-					SetSelected(val)
-				end 
-			}
+		
+			SelectedButton.MouseButton1Click:Connect(function()
+				ToggleDropdown()
+			end)
+		
+			BuildOptions()
+		
+			function DropdownObj:Set(option)
+				SetSelected(option)
+			end
+		
+			function DropdownObj:Refresh(newOptions, targetSelection)
+				options = newOptions or {}
+				BuildOptions()
+				
+				if open then
+					DropdownFrame.Size = UDim2.new(1, 0, 0, 35 + (#options * 25))
+				end
+		
+				local newSelect = targetSelection or options[1] or "None"
+				SetSelected(newSelect)
+			end
+		
+			Library.Elements[flag] = DropdownObj
+			return DropdownObj
 		end
 
 		function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
