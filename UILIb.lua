@@ -24,6 +24,7 @@ Library.Theme = {
 Library.Keybinds = {}
 Library.ThemeObjects = {}
 Library.ActiveColorpicker = nil
+Library.ActiveWindow = nil
 
 --------------------------------------------------------------------------------
 -- CONFIG SYSTEM
@@ -61,6 +62,12 @@ function Library:SaveConfig(fileName)
 		dataToSave[flag] = SerializeValue(value)
 	end
 
+	-- Save Window Size if window exists
+	if Library.ActiveWindow and Library.ActiveWindow.MainFrame then
+		local size = Library.ActiveWindow.MainFrame.AbsoluteSize
+		dataToSave["__WindowSize"] = { Width = size.X, Height = size.Y }
+	end
+
 	local success, err = pcall(function()
 		writefile(fileName .. ".json", HttpService:JSONEncode(dataToSave))
 	end)
@@ -82,12 +89,18 @@ function Library:LoadConfig(fileName)
 
 	if success and type(decoded) == "table" then
 		for flag, rawValue in pairs(decoded) do
-			local value = DeserializeValue(rawValue)
-			Library.Flags[flag] = value
+			if flag == "__WindowSize" and type(rawValue) == "table" then
+				if Library.ActiveWindow and Library.ActiveWindow.Resize then
+					Library.ActiveWindow:Resize(rawValue.Width, rawValue.Height)
+				end
+			else
+				local value = DeserializeValue(rawValue)
+				Library.Flags[flag] = value
 
-			local element = Library.Elements[flag]
-			if element and element.Set then
-				element:Set(value)
+				local element = Library.Elements[flag]
+				if element and element.Set then
+					element:Set(value)
+				end
 			end
 		end
 	else
@@ -170,6 +183,9 @@ function Library:CreateWindow(titleText)
 	MainFrame.ClipsDescendants = true
 	MainFrame.Parent = ScreenGui
 
+	Window.MainFrame = MainFrame
+	Library.ActiveWindow = Window
+
 	local dragging, dragInput, dragStart, startPos
 	local gui = MainFrame
 
@@ -221,6 +237,12 @@ function Library:CreateWindow(titleText)
 		end
 	
 		return self.windowVisible
+	end
+
+	function Window:Resize(width, height)
+		if width and height then
+			MainFrame.Size = UDim2.new(0, width, 0, height)
+		end
 	end
 
 	RunService.RenderStepped:Connect(function()
