@@ -285,7 +285,7 @@ local function removePlayerESP(targetPlayer)
         end
         
         -- Force hide and destroy drawing objects
-        for _, v in pairs(entry.Objects) do
+        for key, v in pairs(entry.Objects) do
             if type(v) == "table" then
                 for _, line in ipairs(v) do 
                     line.Visible = false
@@ -297,12 +297,15 @@ local function removePlayerESP(targetPlayer)
             end
         end
         
+        entry.Objects = nil
         ActiveESP[targetPlayer] = nil
     end
 end
 
 -- Library Methods
 function ESP:Init()
+    ESP:Unload()
+
     for _, plr in ipairs(Players:GetPlayers()) do
         createPlayerESP(plr)
     end
