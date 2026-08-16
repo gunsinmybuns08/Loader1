@@ -34,6 +34,8 @@ local function SerializeValue(value)
 		return { __type = "Color3", R = value.R, G = value.G, B = value.B }
 	elseif typeof(value) == "EnumItem" then
 		return { __type = "EnumItem", EnumType = tostring(value.EnumType), Name = value.Name }
+	elseif typeof(value) == "Vector2" then
+		return { __type = "Vector2", X = value.X, Y = value.Y }
 	end
 	return value
 end
@@ -47,6 +49,8 @@ local function DeserializeValue(value)
 			if enumTable and enumTable[value.Name] then
 				return enumTable[value.Name]
 			end
+		elseif value.__type == "Vector2" then
+			return Vector2.new(value.X, value.Y)
 		end
 	end
 	return value
@@ -165,7 +169,7 @@ function Library:CreateWindow(titleText)
 	MainFrame.Size = UDim2.new(0, Window.BaseWidth, 0, Window.BaseHeight)
 	MainFrame.Position = UDim2.new(0.5, -Window.BaseWidth / 2, 0.5, -Window.BaseHeight / 2)
 	RegisterTheme(MainFrame, "BackgroundColor3", "Background")
-    MainFrame.BorderSizePixel = 0
+	MainFrame.BorderSizePixel = 0
 	MainFrame.Active = true
 	MainFrame.ClipsDescendants = true
 	MainFrame.Parent = ScreenGui
@@ -212,15 +216,15 @@ function Library:CreateWindow(titleText)
 	end
 
 	function Window:Toggle()
-	    MainFrame.Visible = not MainFrame.Visible
-	    self.windowVisible = MainFrame.Visible
+		MainFrame.Visible = not MainFrame.Visible
+		self.windowVisible = MainFrame.Visible
 	
-	    if self.windowVisible then
-	        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-	        UserInputService.MouseIconEnabled = true
-	    end
+		if self.windowVisible then
+			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+			UserInputService.MouseIconEnabled = true
+		end
 	
-	    return self.windowVisible
+		return self.windowVisible
 	end
 
 	RunService.RenderStepped:Connect(function()
@@ -343,7 +347,20 @@ function Library:CreateWindow(titleText)
 	local resizing = false
 	local startMousePos, startSize
 
-	MainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateActiveLine)
+	-- Keep window size updated in library flags for config saving
+	MainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		UpdateActiveLine()
+		Library.Flags["__WindowSize"] = MainFrame.AbsoluteSize
+	end)
+
+	-- Window size element registration so configs restore saved size
+	Library.Elements["__WindowSize"] = {
+		Set = function(self, sizeVector)
+			if typeof(sizeVector) == "Vector2" then
+				MainFrame.Size = UDim2.new(0, sizeVector.X, 0, sizeVector.Y)
+			end
+		end
+	}
 
 	ResizeHandle.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -444,9 +461,9 @@ function Library:CreateWindow(titleText)
 			
 			local Indicator = Instance.new("Frame")
 			Indicator.Size = UDim2.new(0, 15, 0, 15)
-			Indicator.Position = UDim2.new(0, 10, 0.5, -7) -- Fixed left offset
+			Indicator.Position = UDim2.new(0, 10, 0.5, -7)
 			RegisterTheme(Indicator, "BackgroundColor3", toggled and "Accent" or "Background")
-            Indicator.BorderSizePixel = 0
+			Indicator.BorderSizePixel = 0
 			Indicator.Parent = ToggleFrame
 			
 			local ClickArea = Instance.new("TextButton")
@@ -1361,7 +1378,7 @@ function Library:CreateWindow(titleText)
 		return Comp
 	end
 
-    function Window:CreateTab(tabName)
+	function Window:CreateTab(tabName)
 		local Tab = {}
 
 		local TabButton = Instance.new("TextButton")
@@ -1394,7 +1411,6 @@ function Library:CreateWindow(titleText)
 		MainScroll.ScrollBarThickness = 4
 		MainScroll.Parent = PageFrame
 
-		-- Container setup for 2 distinct fixed-width columns
 		local ColumnHolder = Instance.new("Frame")
 		ColumnHolder.Name = "ColumnHolder"
 		ColumnHolder.Size = UDim2.new(1, 0, 1, 0)
@@ -1407,10 +1423,9 @@ function Library:CreateWindow(titleText)
 		HolderLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		HolderLayout.Parent = ColumnHolder
 
-		-- FIXED WIDTH LEFT COLUMN (200px)
 		local LeftColumn = Instance.new("Frame")
 		LeftColumn.Name = "LeftColumn"
-		LeftColumn.Size = UDim2.new(0, 200, 0, 0) -- Fixed width 200
+		LeftColumn.Size = UDim2.new(0, 200, 0, 0)
 		LeftColumn.BackgroundTransparency = 1
 		LeftColumn.Parent = ColumnHolder
 
@@ -1419,10 +1434,9 @@ function Library:CreateWindow(titleText)
 		LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		LeftLayout.Parent = LeftColumn
 
-		-- FIXED WIDTH RIGHT COLUMN (200px)
 		local RightColumn = Instance.new("Frame")
 		RightColumn.Name = "RightColumn"
-		RightColumn.Size = UDim2.new(0, 200, 0, 0) -- Fixed width 200
+		RightColumn.Size = UDim2.new(0, 200, 0, 0)
 		RightColumn.BackgroundTransparency = 1
 		RightColumn.Parent = ColumnHolder
 
@@ -1431,7 +1445,19 @@ function Library:CreateWindow(titleText)
 		RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		RightLayout.Parent = RightColumn
 
-		-- Update scroll canvas vertically
+		local function FitWindowToContent()
+			local leftH = LeftLayout.AbsoluteContentSize.Y
+			local rightH = RightLayout.AbsoluteContentSize.Y
+			local maxH = math.max(leftH, rightH)
+			
+			-- Height required to fit contents without scrolling
+			local neededHeight = maxH + 115
+			local currentWidth = MainFrame.AbsoluteSize.X
+
+			MainFrame.Size = UDim2.new(0, currentWidth, 0, neededHeight)
+			MainFrame.Position = UDim2.new(0.5, -currentWidth / 2, 0.5, -neededHeight / 2)
+		end
+
 		local function UpdateCanvas()
 			local leftH = LeftLayout.AbsoluteContentSize.Y
 			local rightH = RightLayout.AbsoluteContentSize.Y
@@ -1457,7 +1483,7 @@ function Library:CreateWindow(titleText)
 
 			local CardFrame = Instance.new("Frame")
 			CardFrame.Name = subName .. "Card"
-			CardFrame.Size = UDim2.new(1, 0, 0, 36) -- Fills the fixed 200px column width perfectly
+			CardFrame.Size = UDim2.new(1, 0, 0, 36)
 			RegisterTheme(CardFrame, "BackgroundColor3", "Background")
 			CardFrame.BorderSizePixel = 0
 			CardFrame.Parent = targetCol
@@ -1496,7 +1522,6 @@ function Library:CreateWindow(titleText)
 			ElementsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 			ElementsLayout.Parent = ElementsHolder
 
-			-- Card height dynamically adjusts based on added elements, keeping width strictly fixed
 			ElementsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 				local newContentHeight = ElementsLayout.AbsoluteContentSize.Y
 				ElementsHolder.Size = UDim2.new(1, 0, 0, newContentHeight)
@@ -1539,6 +1564,8 @@ function Library:CreateWindow(titleText)
 			task.spawn(function()
 				task.wait()
 				SelectTab()
+				-- Automatically resizes frame height on initialization to fit all elements
+				FitWindowToContent()
 			end)
 		end
 
