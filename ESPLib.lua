@@ -66,6 +66,7 @@ local function hidePlayerESP(objects)
     objects.HealthBg.Visible = false
     objects.HealthFill.Visible = false
     objects.HeadDot.Visible = false
+    objects.HeadLine.Visible = false
     
     if objects.Skeleton then
         for _, line in ipairs(objects.Skeleton) do
@@ -90,6 +91,7 @@ local function createPlayerESP(targetPlayer)
         HealthBg = Drawing.new("Line"),
         HealthFill = Drawing.new("Line"),
         HeadDot = Drawing.new("Circle"),
+        HeadLine = Drawing.new("Line"),
         Skeleton = {}
     }
 
@@ -101,7 +103,7 @@ local function createPlayerESP(targetPlayer)
     local linesToSetup = {
         {objects.Top, 1, 2}, {objects.Bottom, 1, 2}, {objects.Left, 1, 2}, {objects.Right, 1, 2},
         {objects.TopOutline, 2, 1}, {objects.BottomOutline, 2, 1}, {objects.LeftOutline, 2, 1}, {objects.RightOutline, 2, 1},
-        {objects.HealthBg, 3, 1}, {objects.HealthFill, 1, 2}
+        {objects.HealthBg, 3, 1}, {objects.HealthFill, 1, 2}, {objects.HeadLine, 1, 2}
     }
 
     for _, item in ipairs(linesToSetup) do
@@ -263,25 +265,46 @@ local function createPlayerESP(targetPlayer)
                     end
                 end
 
-                -- Head Dot
+                -- Head Dot and Neck/Torso Line
                 if ESP.Settings.HeadDots then
                     local headPart = char:FindFirstChild("Head")
+                    local torsoPart = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+
                     if headPart then
                         local headPos, headVis = Camera:WorldToViewportPoint(headPart.Position)
                         local topHeadPos = Camera:WorldToViewportPoint(headPart.Position + Vector3.new(0, headPart.Size.Y / 2, 0))
+                        
                         if headVis then
                             objects.HeadDot.Position = Vector2.new(headPos.X, headPos.Y)
                             objects.HeadDot.Radius = math.max(math.abs(headPos.Y - topHeadPos.Y), 2)
                             objects.HeadDot.Color = ESP.Settings.HeadDotColor
                             objects.HeadDot.Visible = true
+
+                            -- Line from head dot to torso/skeleton
+                            if torsoPart then
+                                local torsoPos, torsoVis = Camera:WorldToViewportPoint(torsoPart.Position)
+                                if torsoVis then
+                                    objects.HeadLine.From = Vector2.new(headPos.X, headPos.Y)
+                                    objects.HeadLine.To = Vector2.new(torsoPos.X, torsoPos.Y)
+                                    objects.HeadLine.Color = ESP.Settings.HeadDotColor
+                                    objects.HeadLine.Visible = true
+                                else
+                                    objects.HeadLine.Visible = false
+                                end
+                            else
+                                objects.HeadLine.Visible = false
+                            end
                         else
                             objects.HeadDot.Visible = false
+                            objects.HeadLine.Visible = false
                         end
                     else
                         objects.HeadDot.Visible = false
+                        objects.HeadLine.Visible = false
                     end
                 else
                     objects.HeadDot.Visible = false
+                    objects.HeadLine.Visible = false
                 end
                 return
             end
