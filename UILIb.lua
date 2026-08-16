@@ -161,6 +161,47 @@ function Library:DeleteConfig(fileName)
 	end
 end
 
+
+
+
+--------------------------------------------------------------------------------
+-- THEME & INPUT SYSTEM
+--------------------------------------------------------------------------------
+
+function Library:changeTheme(themeKey, newColor)
+	if Library.Theme[themeKey] then
+		Library.Theme[themeKey] = newColor
+		
+		for _, reg in ipairs(Library.ThemeObjects) do
+			if reg.Key == themeKey and reg.Object and reg.Object.Parent then
+				reg.Object[reg.Property] = newColor
+			end
+		end
+	end
+end
+
+local function RegisterTheme(guiObject, propertyName, themeKey)
+	guiObject[propertyName] = Library.Theme[themeKey]
+	table.insert(Library.ThemeObjects, {
+		Object = guiObject,
+		Property = propertyName,
+		Key = themeKey
+	})
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+
+	local pressedKey = (input.UserInputType == Enum.UserInputType.Keyboard) and input.KeyCode or input.UserInputType
+
+	for _, keybind in ipairs(Library.Keybinds) do
+		if keybind.Key == pressedKey and type(keybind.Callback) == "function" then
+			task.spawn(keybind.Callback, pressedKey)
+		end
+	end
+end)
+
+
 function Library:Notify(options)
 	options = options or {}
 	local titleText = options.Title or "Notification"
@@ -307,45 +348,6 @@ function Library:Notify(options)
 		end)
 	end
 end
-
-
---------------------------------------------------------------------------------
--- THEME & INPUT SYSTEM
---------------------------------------------------------------------------------
-
-function Library:changeTheme(themeKey, newColor)
-	if Library.Theme[themeKey] then
-		Library.Theme[themeKey] = newColor
-		
-		for _, reg in ipairs(Library.ThemeObjects) do
-			if reg.Key == themeKey and reg.Object and reg.Object.Parent then
-				reg.Object[reg.Property] = newColor
-			end
-		end
-	end
-end
-
-local function RegisterTheme(guiObject, propertyName, themeKey)
-	guiObject[propertyName] = Library.Theme[themeKey]
-	table.insert(Library.ThemeObjects, {
-		Object = guiObject,
-		Property = propertyName,
-		Key = themeKey
-	})
-end
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-
-	local pressedKey = (input.UserInputType == Enum.UserInputType.Keyboard) and input.KeyCode or input.UserInputType
-
-	for _, keybind in ipairs(Library.Keybinds) do
-		if keybind.Key == pressedKey and type(keybind.Callback) == "function" then
-			task.spawn(keybind.Callback, pressedKey)
-		end
-	end
-end)
-
 
 
 local ScreenGui = Instance.new("ScreenGui")
