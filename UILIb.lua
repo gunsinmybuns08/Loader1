@@ -1537,9 +1537,6 @@ function Library:CreateWindow(titleText)
 
 		return Tab
 	end
-	
-
-	
 	return Window
 end
 
