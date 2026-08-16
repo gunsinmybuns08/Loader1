@@ -34,8 +34,6 @@ local function SerializeValue(value)
 		return { __type = "Color3", R = value.R, G = value.G, B = value.B }
 	elseif typeof(value) == "EnumItem" then
 		return { __type = "EnumItem", EnumType = tostring(value.EnumType), Name = value.Name }
-	elseif typeof(value) == "Vector2" then
-		return { __type = "Vector2", X = value.X, Y = value.Y }
 	end
 	return value
 end
@@ -49,8 +47,6 @@ local function DeserializeValue(value)
 			if enumTable and enumTable[value.Name] then
 				return enumTable[value.Name]
 			end
-		elseif value.__type == "Vector2" then
-			return Vector2.new(value.X, value.Y)
 		end
 	end
 	return value
@@ -313,21 +309,20 @@ function Library:CreateWindow(titleText)
 		end
 	end
 
-	local function AdjustWidthForTabs()
+	local function AdjustWindowBounds(contentWidth, contentHeight)
 		local tabWidth = 100
 		local tabPadding = 6
 		local sideMargin = 20
 		local totalTabs = #Window.Tabs
 
-		if totalTabs == 0 then return end
+		local requiredWidthForTabs = (totalTabs * tabWidth) + ((totalTabs - 1) * tabPadding) + sideMargin
+		local requiredWidthForContent = (contentWidth or 400) + 36
 
-		local requiredWidth = (totalTabs * tabWidth) + ((totalTabs - 1) * tabPadding) + sideMargin
+		local targetWidth = math.max(requiredWidthForTabs, requiredWidthForContent, Window.BaseWidth)
+		local targetHeight = math.max((contentHeight or 0) + 101, Window.BaseHeight)
 
-		if requiredWidth > MainFrame.AbsoluteSize.X then
-			local currentHeight = MainFrame.AbsoluteSize.Y
-			MainFrame.Size = UDim2.new(0, requiredWidth, 0, currentHeight)
-			MainFrame.Position = UDim2.new(0.5, -requiredWidth / 2, 0.5, -currentHeight / 2)
-		end
+		MainFrame.Size = UDim2.new(0, targetWidth, 0, targetHeight)
+		MainFrame.Position = UDim2.new(0.5, -targetWidth / 2, 0.5, -targetHeight / 2)
 	end
 
 	local ResizeHandle = Instance.new("TextButton")
@@ -347,20 +342,7 @@ function Library:CreateWindow(titleText)
 	local resizing = false
 	local startMousePos, startSize
 
-	-- Keep window size updated in library flags for config saving
-	MainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-		UpdateActiveLine()
-		Library.Flags["__WindowSize"] = MainFrame.AbsoluteSize
-	end)
-
-	-- Window size element registration so configs restore saved size
-	Library.Elements["__WindowSize"] = {
-		Set = function(self, sizeVector)
-			if typeof(sizeVector) == "Vector2" then
-				MainFrame.Size = UDim2.new(0, sizeVector.X, 0, sizeVector.Y)
-			end
-		end
-	}
+	MainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateActiveLine)
 
 	ResizeHandle.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -1411,6 +1393,7 @@ function Library:CreateWindow(titleText)
 		MainScroll.ScrollBarThickness = 4
 		MainScroll.Parent = PageFrame
 
+		-- Container setup for 2 distinct fixed-width columns
 		local ColumnHolder = Instance.new("Frame")
 		ColumnHolder.Name = "ColumnHolder"
 		ColumnHolder.Size = UDim2.new(1, 0, 1, 0)
@@ -1423,6 +1406,7 @@ function Library:CreateWindow(titleText)
 		HolderLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		HolderLayout.Parent = ColumnHolder
 
+		-- FIXED WIDTH LEFT COLUMN (200px)
 		local LeftColumn = Instance.new("Frame")
 		LeftColumn.Name = "LeftColumn"
 		LeftColumn.Size = UDim2.new(0, 200, 0, 0)
@@ -1434,6 +1418,7 @@ function Library:CreateWindow(titleText)
 		LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		LeftLayout.Parent = LeftColumn
 
+		-- FIXED WIDTH RIGHT COLUMN (200px)
 		local RightColumn = Instance.new("Frame")
 		RightColumn.Name = "RightColumn"
 		RightColumn.Size = UDim2.new(0, 200, 0, 0)
@@ -1445,24 +1430,17 @@ function Library:CreateWindow(titleText)
 		RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		RightLayout.Parent = RightColumn
 
-		local function FitWindowToContent()
-			local leftH = LeftLayout.AbsoluteContentSize.Y
-			local rightH = RightLayout.AbsoluteContentSize.Y
-			local maxH = math.max(leftH, rightH)
-			
-			-- Height required to fit contents without scrolling
-			local neededHeight = maxH + 115
-			local currentWidth = MainFrame.AbsoluteSize.X
-
-			MainFrame.Size = UDim2.new(0, currentWidth, 0, neededHeight)
-			MainFrame.Position = UDim2.new(0.5, -currentWidth / 2, 0.5, -neededHeight / 2)
-		end
-
+		-- Update scroll canvas vertically and dynamically recalculate bounds
 		local function UpdateCanvas()
 			local leftH = LeftLayout.AbsoluteContentSize.Y
 			local rightH = RightLayout.AbsoluteContentSize.Y
 			local maxH = math.max(leftH, rightH)
 			MainScroll.CanvasSize = UDim2.new(0, 0, 0, maxH + 10)
+
+			if Window.ActiveTab == Tab then
+				local contentW = LeftColumn.Size.X.Offset + RightColumn.Size.X.Offset + HolderLayout.Padding.Offset
+				AdjustWindowBounds(contentW, maxH)
+			end
 		end
 
 		LeftLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateCanvas)
@@ -1550,6 +1528,7 @@ function Library:CreateWindow(titleText)
 
 			Window.ActiveTab = Tab
 			UpdateActiveLine()
+			UpdateCanvas()
 		end
 
 		TabButton.MouseButton1Click:Connect(SelectTab)
@@ -1558,14 +1537,10 @@ function Library:CreateWindow(titleText)
 		Tab.PageFrame = PageFrame
 		table.insert(Window.Tabs, Tab)
 
-		AdjustWidthForTabs()
-
 		if #Window.Tabs == 1 then
 			task.spawn(function()
 				task.wait()
 				SelectTab()
-				-- Automatically resizes frame height on initialization to fit all elements
-				FitWindowToContent()
 			end)
 		end
 
