@@ -1,6 +1,6 @@
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 
@@ -222,6 +222,13 @@ function Library:CreateWindow(titleText)
 	
 	    return self.windowVisible
 	end
+
+	RunService.RenderStepped:Connect(function()
+		if Window.windowVisible then
+			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+			UserInputService.MouseIconEnabled = true
+		end
+	end)
 	
 	local Title = Instance.new("TextLabel")
 	Title.Size = UDim2.new(1, -20, 0, 35)
