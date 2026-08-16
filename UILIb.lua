@@ -166,6 +166,7 @@ function Library:CreateWindow(titleText)
 	MainFrame.Active = true
 	MainFrame.ClipsDescendants = true
 	MainFrame.Parent = ScreenGui
+	MainFrame.ZIndex = 50
 
 	local dragging, dragInput, dragStart, startPos
 	local gui = MainFrame
