@@ -9,7 +9,6 @@ local Camera = Workspace.CurrentCamera
 
 -- Combined Settings
 ESP.Settings = {
-    -- Drawing ESP Toggle Controls
     Enabled = false,
     TeamCheck = false,
     Boxes = true,
@@ -18,8 +17,7 @@ ESP.Settings = {
     Skeletons = true,
     HeadDots = true,
     
-    -- Performance Control
-    UpdateInterval = 0,                                  -- Delay in seconds between ESP redraws (e.g., 0.05 for ~20 FPS updates)
+    UpdateInterval = 0,
     
     BoxColor = Color3.fromRGB(255, 255, 255),
     OutlineColor = Color3.fromRGB(10, 10, 10),
@@ -30,14 +28,13 @@ ESP.Settings = {
     MaxFontSize = 14,
     MinFontSize = 10,
 
-    -- Chams Configuration
     Chams = false,
-    Cham_Type = "Highlight",                            -- Options: "Highlight" or "Adornment"
-    Occluded_Chams = false,                             -- Toggle whether occluded chams show through walls
-    Chams_Color_Visible = Color3.fromRGB(0, 255, 0),    -- Fill color when visible (Green)
-    Chams_Color_Hidden = Color3.fromRGB(255, 0, 0),     -- Fill color when occluded (Red)
-    Glow_Enabled = true,                                 -- Toggles Outline for Highlights / Outer Shells for Adornments
-    ESP_Glow_Color = Color3.fromRGB(255, 255, 255),     -- Outline/Glow color
+    Cham_Type = "Highlight",
+    Occluded_Chams = false,
+    Chams_Color_Visible = Color3.fromRGB(0, 255, 0),
+    Chams_Color_Hidden = Color3.fromRGB(255, 0, 0),
+    Glow_Enabled = true,
+    ESP_Glow_Color = Color3.fromRGB(255, 255, 255),
 
     Highlight = {
         FillTransparency = 0.5,
@@ -80,7 +77,6 @@ local ActiveESP = {}
 local Connections = {}
 local AdornmentCache = {}
 
--- Raycast parameters setup for Chams occluded calculation
 local raycastParams = RaycastParams.new()
 raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 raycastParams.IgnoreWater = true
@@ -100,7 +96,6 @@ local function isCharacterVisible(targetCharacter)
     return rayResult == nil
 end
 
--- Cham Helper Cleanups
 local function cleanupAdornmentCache(char)
     if AdornmentCache[char] then
         for _, box in ipairs(AdornmentCache[char].BaseBoxes) do
@@ -126,25 +121,24 @@ local function destroyAllChams(char)
     destroyHighlight(char)
 end
 
--- Adornment Cache Builder
--- Adornment Cache Builder (Fixed Glow Toggle Evaluation)
 local function setupAdornmentCache(char)
-    if AdornmentCache[char] then return AdornmentCache[char] end
+    local glowShouldExist = ESP.Settings.Glow_Enabled
+    if AdornmentCache[char] then
+        local hasGlow = #AdornmentCache[char].GlowBoxes > 0
+        if hasGlow == glowShouldExist then
+            return AdornmentCache[char]
+        else
+            cleanupAdornmentCache(char)
+        end
+    end
 
     local cache = {
         BaseBoxes = {},
         GlowBoxes = {}
     }
 
-    local validParts = {"Head", "Torso", "UpperTorso", "LowerTorso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
-
-    -- Ensure we check the correct independent toggle path for Adornment glow
-    local adornmentSettings = ESP.Settings.Adornment or {}
-    local glowEnabled = adornmentSettings.Glow_Enabled or ESP.Settings.Glow_Enabled
-
-    for _, partName in ipairs(validParts) do
-        local b = char:FindFirstChild(partName)
-        if b and b:IsA("BasePart") then
+    for _, b in ipairs(char:GetChildren()) do
+        if b:IsA("BasePart") and b.Name ~= "HumanoidRootPart" and b.Transparency ~= 1 then
             local chamsBox = Instance.new("BoxHandleAdornment")
             chamsBox.Name = "Chams"
             chamsBox.ZIndex = 10
@@ -153,17 +147,22 @@ local function setupAdornmentCache(char)
             chamsBox.Parent = b
             table.insert(cache.BaseBoxes, chamsBox)
 
-            if glowEnabled then
-                local maxLayers = math.min(adornmentSettings.Glow_Layers or 1, 1)
+            if glowShouldExist then
+                local maxLayers = math.min(ESP.Settings.Adornment.Glow_Layers, 2) 
                 for i = 1, maxLayers do
                     local glowBox = Instance.new("BoxHandleAdornment")
                     glowBox.Name = "Glow_Layer_" .. i
                     glowBox.Adornee = b
                     glowBox.ZIndex = 10 - i
                     
-                    local offset = (adornmentSettings.Glow_Expansion or 0.1) * i
+                    local offset = ESP.Settings.Adornment.Glow_Expansion * i
                     glowBox.Size = b.Size + Vector3.new(offset, offset, offset)
-                    glowBox.Transparency = adornmentSettings.Glow_Base_Transparency or 0.6
+                    
+                    local alpha = (i - 1) / math.max(maxLayers, 1)
+                    glowBox.Transparency = math.clamp(
+                        ESP.Settings.Adornment.Glow_Base_Transparency + (alpha * (1 - ESP.Settings.Adornment.Glow_Base_Transparency)),
+                        0, 1
+                    )
                     glowBox.Parent = b
                     table.insert(cache.GlowBoxes, glowBox)
                 end
@@ -174,6 +173,7 @@ local function setupAdornmentCache(char)
     AdornmentCache[char] = cache
     return cache
 end
+
 local function hidePlayerESP(objects)
     if not objects then return end
     
@@ -206,7 +206,6 @@ local function updateChams(targetPlayer, char)
         return
     end
 
-    -- Throttle Chams updates to run every ~0.05 seconds (20 FPS) instead of every frame
     local now = tick()
     if chamsUpdateTick[targetPlayer] and (now - chamsUpdateTick[targetPlayer]) < 0.05 then
         return
@@ -325,17 +324,14 @@ local function createPlayerESP(targetPlayer)
         local canRender = ESP.Settings.Enabled and teamCheckPassed and char and hrp and hum and hum.Health > 0
 
         if canRender then
-            -- Chams update runs every frame unfiltered by UpdateInterval
             updateChams(targetPlayer, char)
 
-            -- Check update interval delay strictly for Drawing API ESP elements
             local now = tick()
             if ESP.Settings.UpdateInterval > 0 and (now - lastUpdate) < ESP.Settings.UpdateInterval then
                 return
             end
             lastUpdate = now
 
-            -- Process Drawing API elements
             local _, onScreen = Camera:WorldToViewportPoint(hrp.Position)
             if onScreen then
                 local scale = (char:FindFirstChild("Head") and char.Head.Size.Y / 2) or 1
@@ -355,7 +351,6 @@ local function createPlayerESP(targetPlayer)
                 local distance = (Camera.CFrame.Position - hrp.Position).Magnitude
                 local fontScale = math.clamp(1000 / distance, ESP.Settings.MinFontSize, ESP.Settings.MaxFontSize)
 
-                -- Name
                 if ESP.Settings.Names then
                     objects.Name.Position = Vector2.new(minX + ((maxX - minX) / 2), minY - fontScale - 2)
                     objects.Name.Size = fontScale
@@ -366,7 +361,6 @@ local function createPlayerESP(targetPlayer)
                     objects.Name.Visible = false
                 end
 
-                -- Boxes
                 if ESP.Settings.Boxes then
                     local topLeft = Vector2.new(minX, minY)
                     local topRight = Vector2.new(maxX, minY)
@@ -412,7 +406,6 @@ local function createPlayerESP(targetPlayer)
                     objects.BottomOutline.Visible = false
                 end
 
-                -- Health Bar
                 if ESP.Settings.HealthBars then
                     local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
                     local barX = minX - 5
@@ -432,7 +425,6 @@ local function createPlayerESP(targetPlayer)
                     objects.HealthFill.Visible = false
                 end
 
-                -- Skeleton
                 if ESP.Settings.Skeletons then
                     local connections = (hum.RigType == Enum.HumanoidRigType.R15) and R15Connections or R6Connections
                     for i, pair in ipairs(connections) do
@@ -463,7 +455,6 @@ local function createPlayerESP(targetPlayer)
                     end
                 end
 
-                -- Head Dot and Neck/Torso Line
                 if ESP.Settings.HeadDots then
                     local headPart = char:FindFirstChild("Head")
                     local torsoPart = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
@@ -507,7 +498,6 @@ local function createPlayerESP(targetPlayer)
             end
         end
 
-        -- Clean up state on dead/invalid/off-screen render cycles
         hidePlayerESP(objects)
         if char then
             destroyAllChams(char)
@@ -551,7 +541,6 @@ local function removePlayerESP(targetPlayer)
     end
 end
 
--- Library Methods
 function ESP:Unload()
     for _, conn in ipairs(Connections) do
         conn:Disconnect()
