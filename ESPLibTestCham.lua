@@ -28,7 +28,7 @@ ESP.Settings = {
     MinFontSize = 10,
 
     -- Chams Configuration
-    Chams = true,
+    Chams = false,
     Cham_Type = "Highlight",                            -- Options: "Highlight" or "Adornment"
     Occluded_Chams = false,                             -- Toggle whether occluded chams show through walls
     Chams_Color_Visible = Color3.fromRGB(0, 255, 0),    -- Fill color when visible (Green)
