@@ -127,6 +127,7 @@ local function destroyAllChams(char)
 end
 
 -- Adornment Cache Builder
+-- Adornment Cache Builder (Fixed Glow Toggle Evaluation)
 local function setupAdornmentCache(char)
     if AdornmentCache[char] then return AdornmentCache[char] end
 
@@ -135,8 +136,11 @@ local function setupAdornmentCache(char)
         GlowBoxes = {}
     }
 
-    -- Restrict to standard body parts to avoid looping through dozens of heavy accessories/clothes
     local validParts = {"Head", "Torso", "UpperTorso", "LowerTorso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
+
+    -- Ensure we check the correct independent toggle path for Adornment glow
+    local adornmentSettings = ESP.Settings.Adornment or {}
+    local glowEnabled = adornmentSettings.Glow_Enabled or ESP.Settings.Glow_Enabled
 
     for _, partName in ipairs(validParts) do
         local b = char:FindFirstChild(partName)
@@ -149,17 +153,17 @@ local function setupAdornmentCache(char)
             chamsBox.Parent = b
             table.insert(cache.BaseBoxes, chamsBox)
 
-            if ESP.Settings.Glow_Enabled then
-                local maxLayers = math.min(ESP.Settings.Adornment.Glow_Layers, 1) -- Capped layers to save performance
+            if glowEnabled then
+                local maxLayers = math.min(adornmentSettings.Glow_Layers or 1, 1)
                 for i = 1, maxLayers do
                     local glowBox = Instance.new("BoxHandleAdornment")
                     glowBox.Name = "Glow_Layer_" .. i
                     glowBox.Adornee = b
                     glowBox.ZIndex = 10 - i
                     
-                    local offset = ESP.Settings.Adornment.Glow_Expansion * i
+                    local offset = (adornmentSettings.Glow_Expansion or 0.1) * i
                     glowBox.Size = b.Size + Vector3.new(offset, offset, offset)
-                    glowBox.Transparency = ESP.Settings.Adornment.Glow_Base_Transparency
+                    glowBox.Transparency = adornmentSettings.Glow_Base_Transparency or 0.6
                     glowBox.Parent = b
                     table.insert(cache.GlowBoxes, glowBox)
                 end
@@ -170,7 +174,6 @@ local function setupAdornmentCache(char)
     AdornmentCache[char] = cache
     return cache
 end
-
 local function hidePlayerESP(objects)
     if not objects then return end
     
