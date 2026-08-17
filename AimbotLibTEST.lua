@@ -174,7 +174,7 @@ end
 function Aimbot:Aim(target, deltaTime)
     if not target then return end
 
-    local targetPart = getTargetPart(target, self.Config.targetHitbox)
+    local targetPart = getTargetPart(target.Character, self.Config.targetHitbox)
     if not targetPart then return end
 
     if self.Config.aimMode == "Mouse" then
