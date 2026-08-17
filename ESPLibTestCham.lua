@@ -212,11 +212,9 @@ local function updateChams(targetPlayer, char)
     end
     chamsUpdateTick[targetPlayer] = now
 
-    -- Check if the character is visible (not blocked by walls/objects)
     local visible = isCharacterVisible(char)
-    
-    -- Pick the color based on visibility: if visible use Visible color, otherwise use Hidden (occluded) color
-    local targetColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
+    -- If occluded chams setting is enabled, we allow rendering even when not visible, using the hidden color.
+    local targetColor = (visible or not ESP.Settings.Occluded_Chams) and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
 
     if ESP.Settings.Cham_Type == "Highlight" then
         cleanupAdornmentCache(char)
