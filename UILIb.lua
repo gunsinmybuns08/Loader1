@@ -643,69 +643,120 @@ function Library:CreateWindow(titleText)
 		end
 
 		function Comp:AddToggle(text, defaultState, flag, callback)
-			if type(flag) == "function" then
-				callback = flag
-				flag = text
-			end
-			callback = callback or function() end
-			flag = flag or text
-
-			local toggled = defaultState or false
-			Library.Flags[flag] = toggled
-			
-			local ToggleFrame = Instance.new("Frame")
-			ToggleFrame.Size = UDim2.new(1, 0, 0, 32)
-			RegisterTheme(ToggleFrame, "BackgroundColor3", "Container")
-			ToggleFrame.Transparency = 0
-			ToggleFrame.Parent = TargetContainer
-			
-			local ToggleCorner = Instance.new("UICorner")
-			ToggleCorner.CornerRadius = UDim.new(0, 5)
-			ToggleCorner.Parent = ToggleFrame
-			
-			local Label = Instance.new("TextLabel")
-			Label.Size = UDim2.new(1, -50, 1, 0)
-			Label.Position = UDim2.new(0, 35, 0, 0)
-			Label.BackgroundTransparency = 1
-			Label.Text = text
-			RegisterTheme(Label, "TextColor3", "Text")
-			Label.TextSize = 13
-			Label.Font = Enum.Font.SourceSans
-			Label.TextXAlignment = Enum.TextXAlignment.Left
-			Label.Parent = ToggleFrame
-			
-			local Indicator = Instance.new("Frame")
-			Indicator.Size = UDim2.new(0, 15, 0, 15)
-			Indicator.Position = UDim2.new(0, 10, 0.5, -7)
-			RegisterTheme(Indicator, "BackgroundColor3", toggled and "Accent" or "Background")
-			Indicator.BorderSizePixel = 0
-			Indicator.Parent = ToggleFrame
-			
-			local ClickArea = Instance.new("TextButton")
-			ClickArea.Size = UDim2.new(1, 0, 1, 0)
-			ClickArea.BackgroundTransparency = 1
-			ClickArea.Text = ""
-			ClickArea.Parent = ToggleFrame
-
-			local function SetState(state)
-				toggled = state
-				Library.Flags[flag] = toggled
-				local targetColor = toggled and Library.Theme.Accent or Library.Theme.Background
-				TweenService:Create(Indicator, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
-				callback(toggled)
-			end
-			
-			ClickArea.MouseButton1Click:Connect(function()
-				SetState(not toggled)
-			end)
-
-			Library.Elements[flag] = { 
-				Set = function(self, val)
-					SetState(val)
-				end 
-			}
+		    if type(flag) == "function" then
+		        callback = flag
+		        flag = text
+		    end
+		    callback = callback or function() end
+		    flag = flag or text
+		
+		    local toggled = defaultState or false
+		    Library.Flags[flag] = toggled
+		
+		    -- Main container holding both the toggle bar and any expanded sub-elements
+		    local ContainerFrame = Instance.new("Frame")
+		    ContainerFrame.Name = text .. "_ToggleContainer"
+		    ContainerFrame.Size = UDim2.new(1, 0, 0, 32)
+		    ContainerFrame.BackgroundTransparency = 1
+		    ContainerFrame.Parent = TargetContainer
+		
+		    local ContainerLayout = Instance.new("UIListLayout")
+		    ContainerLayout.Padding = UDim.new(0, 6)
+		    ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		    ContainerLayout.Parent = ContainerFrame
+		
+		    -- Toggle Bar
+		    local ToggleFrame = Instance.new("Frame")
+		    ToggleFrame.Name = "ToggleFrame"
+		    ToggleFrame.Size = UDim2.new(1, 0, 0, 32)
+		    RegisterTheme(ToggleFrame, "BackgroundColor3", "Container")
+		    ToggleFrame.Transparency = 0
+		    ToggleFrame.Parent = ContainerFrame
+		
+		    local ToggleCorner = Instance.new("UICorner")
+		    ToggleCorner.CornerRadius = UDim.new(0, 5)
+		    ToggleCorner.Parent = ToggleFrame
+		
+		    local Label = Instance.new("TextLabel")
+		    Label.Size = UDim2.new(1, -50, 1, 0)
+		    Label.Position = UDim2.new(0, 35, 0, 0)
+		    Label.BackgroundTransparency = 1
+		    Label.Text = text
+		    RegisterTheme(Label, "TextColor3", "Text")
+		    Label.TextSize = 13
+		    Label.Font = Enum.Font.SourceSans
+		    Label.TextXAlignment = Enum.TextXAlignment.Left
+		    Label.Parent = ToggleFrame
+		
+		    local Indicator = Instance.new("Frame")
+		    Indicator.Size = UDim2.new(0, 15, 0, 15)
+		    Indicator.Position = UDim2.new(0, 10, 0.5, -7)
+		    RegisterTheme(Indicator, "BackgroundColor3", toggled and "Accent" or "Background")
+		    Indicator.BorderSizePixel = 0
+		    Indicator.Parent = ToggleFrame
+		
+		    local ClickArea = Instance.new("TextButton")
+		    ClickArea.Size = UDim2.new(1, 0, 1, 0)
+		    ClickArea.BackgroundTransparency = 1
+		    ClickArea.Text = ""
+		    ClickArea.Parent = ToggleFrame
+		
+		    -- Container for child elements (Hidden by default unless toggled is true)
+		    local ChildrenHolder = Instance.new("Frame")
+		    ChildrenHolder.Name = "ChildrenHolder"
+		    ChildrenHolder.Size = UDim2.new(1, 0, 0, 0)
+		    ChildrenHolder.BackgroundTransparency = 1
+		    ChildrenHolder.Visible = toggled
+		    ChildrenHolder.Parent = ContainerFrame
+		
+		    local ChildrenLayout = Instance.new("UIListLayout")
+		    ChildrenLayout.Padding = UDim.new(0, 6)
+		    ChildrenLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		    ChildrenLayout.Parent = ChildrenHolder
+		
+		    -- Automatically resize ChildrenHolder & ContainerFrame based on contents
+		    ChildrenLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		        local height = ChildrenLayout.AbsoluteContentSize.Y
+		        ChildrenHolder.Size = UDim2.new(1, 0, 0, height)
+		        
+		        if toggled then
+		            ContainerFrame.Size = UDim2.new(1, 0, 0, 32 + (height > 0 and (height + 6) or 0))
+		        end
+		    end)
+		
+		    local function SetState(state)
+		        toggled = state
+		        Library.Flags[flag] = toggled
+		
+		        local targetColor = toggled and Library.Theme.Accent or Library.Theme.Background
+		        TweenService:Create(Indicator, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
+		
+		        ChildrenHolder.Visible = toggled
+		
+		        local childHeight = ChildrenLayout.AbsoluteContentSize.Y
+		        local targetContainerHeight = toggled and (32 + (childHeight > 0 and (childHeight + 6) or 0)) or 32
+		        
+		        TweenService:Create(ContainerFrame, TweenInfo.new(0.2), {
+		            Size = UDim2.new(1, 0, 0, targetContainerHeight)
+		        }):Play()
+		
+		        callback(toggled)
+		    end
+		
+		    ClickArea.MouseButton1Click:Connect(function()
+		        SetState(not toggled)
+		    end)
+		
+		    -- Create element component builder bound to ChildrenHolder
+		    local ToggleObj = CreateComponents(ChildrenHolder)
+		
+		    function ToggleObj:Set(val)
+		        SetState(val)
+		    end
+		
+		    Library.Elements[flag] = ToggleObj
+		    return ToggleObj
 		end
-
 		function Comp:AddKeybind(text, defaultKey, flag, callback)
 			if type(flag) == "function" then
 				callback = flag
