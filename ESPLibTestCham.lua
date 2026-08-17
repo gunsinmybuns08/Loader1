@@ -18,6 +18,9 @@ ESP.Settings = {
     Skeletons = true,
     HeadDots = true,
     
+    -- Performance Control
+    UpdateInterval = 0,                                  -- Delay in seconds between ESP redraws (e.g., 0.05 for ~20 FPS updates)
+    
     BoxColor = Color3.fromRGB(255, 255, 255),
     OutlineColor = Color3.fromRGB(10, 10, 10),
     TextColor = Color3.fromRGB(255, 255, 255),
@@ -28,7 +31,7 @@ ESP.Settings = {
     MinFontSize = 10,
 
     -- Chams Configuration
-    Chams = false,                                      -- Default set to false so it respects toggle state
+    Chams = false,
     Cham_Type = "Highlight",                            -- Options: "Highlight" or "Adornment"
     Occluded_Chams = false,                             -- Toggle whether occluded chams show through walls
     Chams_Color_Visible = Color3.fromRGB(0, 255, 0),    -- Fill color when visible (Green)
@@ -123,7 +126,7 @@ local function destroyAllChams(char)
     destroyHighlight(char)
 end
 
--- Adornment Cache Builder (Instantiates elements once per character)
+-- Adornment Cache Builder
 local function setupAdornmentCache(char)
     if AdornmentCache[char] then return AdornmentCache[char] end
 
@@ -134,7 +137,6 @@ local function setupAdornmentCache(char)
 
     for _, b in ipairs(char:GetChildren()) do
         if b:IsA("BasePart") and b.Name ~= "HumanoidRootPart" and b.Transparency ~= 1 then
-            -- Base Cham
             local chamsBox = Instance.new("BoxHandleAdornment")
             chamsBox.Name = "Chams"
             chamsBox.ZIndex = 10
@@ -143,7 +145,6 @@ local function setupAdornmentCache(char)
             chamsBox.Parent = b
             table.insert(cache.BaseBoxes, chamsBox)
 
-            -- Glow Layers
             if ESP.Settings.Glow_Enabled then
                 for i = 1, ESP.Settings.Adornment.Glow_Layers do
                     local glowBox = Instance.new("BoxHandleAdornment")
@@ -200,7 +201,6 @@ local function updateChams(targetPlayer, char)
         return
     end
 
-    -- Skip raycasts if Occluded_Chams is enabled to save FPS
     local visible = true
     if not ESP.Settings.Occluded_Chams then
         visible = isCharacterVisible(char)
@@ -231,7 +231,6 @@ local function updateChams(targetPlayer, char)
             local targetColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
             local alwaysOnTop = ESP.Settings.Occluded_Chams
 
-            -- Fast batch property updates without instantiating or searching children
             for _, box in ipairs(cache.BaseBoxes) do
                 box.Color3 = targetColor
                 box.AlwaysOnTop = alwaysOnTop
@@ -302,6 +301,8 @@ local function createPlayerESP(targetPlayer)
         table.insert(objects.Skeleton, line)
     end
 
+    local lastUpdate = 0
+
     local renderConn
     renderConn = RunService.RenderStepped:Connect(function()
         local char = targetPlayer.Character
@@ -312,6 +313,13 @@ local function createPlayerESP(targetPlayer)
         local canRender = ESP.Settings.Enabled and teamCheckPassed and char and hrp and hum and hum.Health > 0
 
         if canRender then
+            -- Check update interval delay
+            local now = tick()
+            if ESP.Settings.UpdateInterval > 0 and (now - lastUpdate) < ESP.Settings.UpdateInterval then
+                return
+            end
+            lastUpdate = now
+
             -- Process Chams render pass
             updateChams(targetPlayer, char)
 
