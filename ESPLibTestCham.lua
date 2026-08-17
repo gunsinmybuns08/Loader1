@@ -146,7 +146,9 @@ local function setupAdornmentCache(char)
             table.insert(cache.BaseBoxes, chamsBox)
 
             if ESP.Settings.Glow_Enabled then
-                for i = 1, ESP.Settings.Adornment.Glow_Layers do
+                -- Respect a performance cap on max glow layers
+                local maxLayers = math.min(ESP.Settings.Adornment.Glow_Layers, 2) 
+                for i = 1, maxLayers do
                     local glowBox = Instance.new("BoxHandleAdornment")
                     glowBox.Name = "Glow_Layer_" .. i
                     glowBox.Adornee = b
@@ -155,7 +157,7 @@ local function setupAdornmentCache(char)
                     local offset = ESP.Settings.Adornment.Glow_Expansion * i
                     glowBox.Size = b.Size + Vector3.new(offset, offset, offset)
                     
-                    local alpha = (i - 1) / math.max(ESP.Settings.Adornment.Glow_Layers, 1)
+                    local alpha = (i - 1) / math.max(maxLayers, 1)
                     glowBox.Transparency = math.clamp(
                         ESP.Settings.Adornment.Glow_Base_Transparency + (alpha * (1 - ESP.Settings.Adornment.Glow_Base_Transparency)),
                         0, 1
@@ -195,11 +197,20 @@ local function hidePlayerESP(objects)
     end
 end
 
+local chamsUpdateTick = {}
+
 local function updateChams(targetPlayer, char)
     if not ESP.Settings.Chams then
         destroyAllChams(char)
         return
     end
+
+    -- Throttle Chams updates to run every ~0.05 seconds (20 FPS) instead of every frame
+    local now = tick()
+    if chamsUpdateTick[targetPlayer] and (now - chamsUpdateTick[targetPlayer]) < 0.05 then
+        return
+    end
+    chamsUpdateTick[targetPlayer] = now
 
     local visible = true
     if not ESP.Settings.Occluded_Chams then
@@ -227,14 +238,7 @@ local function updateChams(targetPlayer, char)
         elseif ESP.Settings.Cham_Type == "Adornment" then
             destroyHighlight(char)
 
-            -- Force cache rebuild if Glow setting state changed or cache doesn't match
-            local cache = AdornmentCache[char]
-            local hasGlowBoxes = cache and #cache.GlowBoxes > 0
-            if not cache or (ESP.Settings.Glow_Enabled and not hasGlowBoxes) or (not ESP.Settings.Glow_Enabled and hasGlowBoxes) then
-                cleanupAdornmentCache(char)
-                cache = setupAdornmentCache(char)
-            end
-
+            local cache = setupAdornmentCache(char)
             local targetColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
             local alwaysOnTop = ESP.Settings.Occluded_Chams
 
@@ -247,8 +251,6 @@ local function updateChams(targetPlayer, char)
             for _, glowBox in ipairs(cache.GlowBoxes) do
                 glowBox.Color3 = ESP.Settings.ESP_Glow_Color
                 glowBox.AlwaysOnTop = ESP.Settings.Adornment.Glow_AlwaysOnTop and alwaysOnTop
-                -- Hide or show glow layers based on the master Glow_Enabled toggle
-                glowBox.Transparency = ESP.Settings.Glow_Enabled and glowBox.Transparency or 1
             end
         end
     else
