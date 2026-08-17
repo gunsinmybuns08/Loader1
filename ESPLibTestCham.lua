@@ -28,7 +28,7 @@ ESP.Settings = {
     MinFontSize = 10,
 
     -- Chams Configuration
-    Chams = false,
+    Chams = false,                                      -- Default set to false so it respects toggle state
     Cham_Type = "Highlight",                            -- Options: "Highlight" or "Adornment"
     Occluded_Chams = false,                             -- Toggle whether occluded chams show through walls
     Chams_Color_Visible = Color3.fromRGB(0, 255, 0),    -- Fill color when visible (Green)
@@ -75,6 +75,7 @@ local R15Connections = {
 
 local ActiveESP = {}
 local Connections = {}
+local AdornmentCache = {}
 
 -- Raycast parameters setup for Chams occluded calculation
 local raycastParams = RaycastParams.new()
@@ -97,23 +98,16 @@ local function isCharacterVisible(targetCharacter)
 end
 
 -- Cham Helper Cleanups
-local function destroyGlow(part)
-    for _, child in ipairs(part:GetChildren()) do
-        if child.Name:sub(1, 11) == "Glow_Layer_" then
-            child:Destroy()
+local function cleanupAdornmentCache(char)
+    if AdornmentCache[char] then
+        for _, box in ipairs(AdornmentCache[char].BaseBoxes) do
+            box:Destroy()
         end
+        for _, glowBox in ipairs(AdornmentCache[char].GlowBoxes) do
+            glowBox:Destroy()
+        end
+        AdornmentCache[char] = nil
     end
-end
-
-local function destroyAdornments(char)
-    for _, v in ipairs(char:GetChildren()) do
-        if v:IsA("BasePart") then
-            if v:FindFirstChild("Chams") then
-                v.Chams:Destroy()
-            end
-            destroyGlow(v)
-        end 
-    end 
 end
 
 local function destroyHighlight(char)
@@ -125,8 +119,55 @@ end
 
 local function destroyAllChams(char)
     if not char then return end
-    destroyAdornments(char)
+    cleanupAdornmentCache(char)
     destroyHighlight(char)
+end
+
+-- Adornment Cache Builder (Instantiates elements once per character)
+local function setupAdornmentCache(char)
+    if AdornmentCache[char] then return AdornmentCache[char] end
+
+    local cache = {
+        BaseBoxes = {},
+        GlowBoxes = {}
+    }
+
+    for _, b in ipairs(char:GetChildren()) do
+        if b:IsA("BasePart") and b.Name ~= "HumanoidRootPart" and b.Transparency ~= 1 then
+            -- Base Cham
+            local chamsBox = Instance.new("BoxHandleAdornment")
+            chamsBox.Name = "Chams"
+            chamsBox.ZIndex = 10
+            chamsBox.Adornee = b
+            chamsBox.Size = b.Size + Vector3.new(0.01, 0.01, 0.01)
+            chamsBox.Parent = b
+            table.insert(cache.BaseBoxes, chamsBox)
+
+            -- Glow Layers
+            if ESP.Settings.Glow_Enabled then
+                for i = 1, ESP.Settings.Adornment.Glow_Layers do
+                    local glowBox = Instance.new("BoxHandleAdornment")
+                    glowBox.Name = "Glow_Layer_" .. i
+                    glowBox.Adornee = b
+                    glowBox.ZIndex = 10 - i
+                    
+                    local offset = ESP.Settings.Adornment.Glow_Expansion * i
+                    glowBox.Size = b.Size + Vector3.new(offset, offset, offset)
+                    
+                    local alpha = (i - 1) / math.max(ESP.Settings.Adornment.Glow_Layers, 1)
+                    glowBox.Transparency = math.clamp(
+                        ESP.Settings.Adornment.Glow_Base_Transparency + (alpha * (1 - ESP.Settings.Adornment.Glow_Base_Transparency)),
+                        0, 1
+                    )
+                    glowBox.Parent = b
+                    table.insert(cache.GlowBoxes, glowBox)
+                end
+            end
+        end
+    end
+
+    AdornmentCache[char] = cache
+    return cache
 end
 
 local function hidePlayerESP(objects)
@@ -159,11 +200,15 @@ local function updateChams(targetPlayer, char)
         return
     end
 
-    local visible = isCharacterVisible(char)
+    -- Skip raycasts if Occluded_Chams is enabled to save FPS
+    local visible = true
+    if not ESP.Settings.Occluded_Chams then
+        visible = isCharacterVisible(char)
+    end
 
     if visible or ESP.Settings.Occluded_Chams then
         if ESP.Settings.Cham_Type == "Highlight" then
-            destroyAdornments(char)
+            cleanupAdornmentCache(char)
 
             local hl = char:FindFirstChild("ESPHighlight")
             if not hl then
@@ -175,59 +220,27 @@ local function updateChams(targetPlayer, char)
 
             hl.FillColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
             hl.FillTransparency = ESP.Settings.Highlight.FillTransparency
-
-            if ESP.Settings.Glow_Enabled then
-                hl.OutlineColor = ESP.Settings.ESP_Glow_Color
-                hl.OutlineTransparency = ESP.Settings.Highlight.OutlineTransparency
-            else
-                hl.OutlineTransparency = 1
-            end
-
+            hl.OutlineColor = ESP.Settings.ESP_Glow_Color
+            hl.OutlineTransparency = ESP.Settings.Glow_Enabled and ESP.Settings.Highlight.OutlineTransparency or 1
             hl.DepthMode = ESP.Settings.Occluded_Chams and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
 
         elseif ESP.Settings.Cham_Type == "Adornment" then
             destroyHighlight(char)
 
-            for _, b in ipairs(char:GetChildren()) do
-                if b:IsA("BasePart") and b.Transparency ~= 1 then
-                    local chamsBox = b:FindFirstChild("Chams")
-                    if not chamsBox then
-                        chamsBox = Instance.new("BoxHandleAdornment", b)
-                        chamsBox.Name = "Chams"
-                        chamsBox.ZIndex = 10
-                        chamsBox.Adornee = b
-                        chamsBox.Transparency = ESP.Settings.Adornment.Transparency
-                        chamsBox.Size = b.Size + Vector3.new(0.01, 0.01, 0.01)
-                    end
+            local cache = setupAdornmentCache(char)
+            local targetColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
+            local alwaysOnTop = ESP.Settings.Occluded_Chams
 
-                    chamsBox.AlwaysOnTop = ESP.Settings.Occluded_Chams
-                    chamsBox.Color3 = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
+            -- Fast batch property updates without instantiating or searching children
+            for _, box in ipairs(cache.BaseBoxes) do
+                box.Color3 = targetColor
+                box.AlwaysOnTop = alwaysOnTop
+                box.Transparency = ESP.Settings.Adornment.Transparency
+            end
 
-                    if ESP.Settings.Glow_Enabled then
-                        for i = 1, ESP.Settings.Adornment.Glow_Layers do
-                            local layerName = "Glow_Layer_" .. i
-                            local glowBox = b:FindFirstChild(layerName)
-
-                            if not glowBox then
-                                glowBox = Instance.new("BoxHandleAdornment", b)
-                                glowBox.Name = layerName
-                                glowBox.Adornee = b
-                            end
-
-                            glowBox.AlwaysOnTop = ESP.Settings.Adornment.Glow_AlwaysOnTop and ESP.Settings.Occluded_Chams
-                            
-                            local offset = ESP.Settings.Adornment.Glow_Expansion * i
-                            glowBox.Size = b.Size + Vector3.new(offset, offset, offset)
-                            glowBox.ZIndex = 10 - i
-                            glowBox.Color3 = ESP.Settings.ESP_Glow_Color
-                            
-                            local alpha = (i - 1) / math.max(ESP.Settings.Adornment.Glow_Layers, 1)
-                            glowBox.Transparency = math.clamp(ESP.Settings.Adornment.Glow_Base_Transparency + (alpha * (1 - ESP.Settings.Adornment.Glow_Base_Transparency)), 0, 1)
-                        end
-                    else
-                        destroyGlow(b)
-                    end
-                end
+            for _, glowBox in ipairs(cache.GlowBoxes) do
+                glowBox.Color3 = ESP.Settings.ESP_Glow_Color
+                glowBox.AlwaysOnTop = ESP.Settings.Adornment.Glow_AlwaysOnTop and alwaysOnTop
             end
         end
     else
@@ -535,6 +548,7 @@ function ESP:Unload()
     end
     
     table.clear(ActiveESP)
+    table.clear(AdornmentCache)
 end
 
 function ESP:Init()
