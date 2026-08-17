@@ -972,15 +972,14 @@ function Library:CreateWindow(titleText)
 		    flag = flag or text
 		
 		    options = options or {}
-		    local selected = defaultOption or options[1] or ""
+		    local selected = defaultOption or options[1] or "Select..."
 		    Library.Flags[flag] = selected
+		    local open = false
 		
-		    local isOpen = false
-		
-		    -- Container holding dropdown button, option list, and child components
+		    -- Outer container holding the dropdown bar and the active sub-element holder
 		    local ContainerFrame = Instance.new("Frame")
 		    ContainerFrame.Name = text .. "_DropdownContainer"
-		    ContainerFrame.Size = UDim2.new(1, 0, 0, 48)
+		    ContainerFrame.Size = UDim2.new(1, 0, 0, 32)
 		    ContainerFrame.BackgroundTransparency = 1
 		    ContainerFrame.Parent = TargetContainer
 		
@@ -989,172 +988,216 @@ function Library:CreateWindow(titleText)
 		    ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		    ContainerLayout.Parent = ContainerFrame
 		
-		    -- Label & Dropdown Header Button
-		    local DropdownHeader = Instance.new("Frame")
-		    DropdownHeader.Name = "DropdownHeader"
-		    DropdownHeader.Size = UDim2.new(1, 0, 0, 48)
-		    DropdownHeader.BackgroundTransparency = 1
-		    DropdownHeader.Parent = ContainerFrame
+		    -- Dropdown Main Bar
+		    local DropdownFrame = Instance.new("Frame")
+		    DropdownFrame.Name = "DropdownFrame"
+		    DropdownFrame.Size = UDim2.new(1, 0, 0, 32)
+		    RegisterTheme(DropdownFrame, "BackgroundColor3", "Container")
+		    DropdownFrame.ClipsDescendants = true
+		    DropdownFrame.Parent = ContainerFrame
+		
+		    local DropdownCorner = Instance.new("UICorner")
+		    DropdownCorner.CornerRadius = UDim.new(0, 5)
+		    DropdownCorner.Parent = DropdownFrame
 		
 		    local Label = Instance.new("TextLabel")
-		    Label.Size = UDim2.new(1, 0, 0, 18)
+		    Label.Size = UDim2.new(0.5, -10, 0, 32)
+		    Label.Position = UDim2.new(0, 10, 0, 0)
 		    Label.BackgroundTransparency = 1
 		    Label.Text = text
 		    RegisterTheme(Label, "TextColor3", "Text")
 		    Label.TextSize = 13
 		    Label.Font = Enum.Font.SourceSans
 		    Label.TextXAlignment = Enum.TextXAlignment.Left
-		    Label.Parent = DropdownHeader
+		    Label.Parent = DropdownFrame
 		
-		    local DropFrame = Instance.new("Frame")
-		    DropFrame.Size = UDim2.new(1, 0, 0, 26)
-		    DropFrame.Position = UDim2.new(0, 0, 0, 22)
-		    RegisterTheme(DropFrame, "BackgroundColor3", "Container")
-		    DropFrame.Parent = DropdownHeader
+		    local SelectedButton = Instance.new("TextButton")
+		    SelectedButton.Size = UDim2.new(0.5, -10, 0, 22)
+		    SelectedButton.Position = UDim2.new(0.5, 0, 0, 5)
+		    RegisterTheme(SelectedButton, "BackgroundColor3", "Background")
+		    SelectedButton.Text = selected .. "  ▼"
+		    RegisterTheme(SelectedButton, "TextColor3", "Text")
+		    SelectedButton.TextSize = 12
+		    SelectedButton.Font = Enum.Font.SourceSansBold
+		    SelectedButton.AutoButtonColor = false
+		    SelectedButton.Parent = DropdownFrame
 		
-		    local DropCorner = Instance.new("UICorner")
-		    DropCorner.CornerRadius = UDim.new(0, 5)
-		    DropCorner.Parent = DropFrame
+		    local SelectedCorner = Instance.new("UICorner")
+		    SelectedCorner.CornerRadius = UDim.new(0, 4)
+		    SelectedCorner.Parent = SelectedButton
 		
-		    local ValueLabel = Instance.new("TextLabel")
-		    ValueLabel.Size = UDim2.new(1, -25, 1, 0)
-		    ValueLabel.Position = UDim2.new(0, 8, 0, 0)
-		    ValueLabel.BackgroundTransparency = 1
-		    ValueLabel.Text = tostring(selected)
-		    RegisterTheme(ValueLabel, "TextColor3", "SubText")
-		    ValueLabel.TextSize = 13
-		    ValueLabel.Font = Enum.Font.SourceSans
-		    ValueLabel.TextXAlignment = Enum.TextXAlignment.Left
-		    ValueLabel.Parent = DropFrame
-		
-		    local Arrow = Instance.new("TextLabel")
-		    Arrow.Size = UDim2.new(0, 20, 1, 0)
-		    Arrow.Position = UDim2.new(1, -20, 0, 0)
-		    Arrow.BackgroundTransparency = 1
-		    Arrow.Text = "v"
-		    RegisterTheme(Arrow, "TextColor3", "SubText")
-		    Arrow.TextSize = 12
-		    Arrow.Font = Enum.Font.SourceSans
-		    Arrow.Parent = DropFrame
-		
-		    local DropButton = Instance.new("TextButton")
-		    DropButton.Size = UDim2.new(1, 0, 1, 0)
-		    DropButton.BackgroundTransparency = 1
-		    DropButton.Text = ""
-		    DropButton.Parent = DropFrame
-		
-		    -- Options Container
 		    local OptionsHolder = Instance.new("Frame")
 		    OptionsHolder.Name = "OptionsHolder"
-		    OptionsHolder.Size = UDim2.new(1, 0, 0, 0)
+		    OptionsHolder.Size = UDim2.new(1, -20, 0, 0)
+		    OptionsHolder.Position = UDim2.new(0, 10, 0, 35)
 		    OptionsHolder.BackgroundTransparency = 1
-		    OptionsHolder.ClipsDescendants = true
-		    OptionsHolder.Visible = false
-		    OptionsHolder.Parent = ContainerFrame
+		    OptionsHolder.Parent = DropdownFrame
 		
 		    local OptionsLayout = Instance.new("UIListLayout")
-		    OptionsLayout.Padding = UDim.new(0, 4)
+		    OptionsLayout.Padding = UDim.new(0, 3)
 		    OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		    OptionsLayout.Parent = OptionsHolder
 		
-		    -- Children Container for nested sub-components
-		    local ChildrenHolder = Instance.new("Frame")
-		    ChildrenHolder.Name = "ChildrenHolder"
-		    ChildrenHolder.Size = UDim2.new(1, 0, 0, 0)
-		    ChildrenHolder.BackgroundTransparency = 1
-		    ChildrenHolder.Parent = ContainerFrame
+		    -- Container holding option-specific UI elements
+		    local SubHolders = {}
+		    local OptionComponents = {}
 		
-		    local ChildrenLayout = Instance.new("UIListLayout")
-		    ChildrenLayout.Padding = UDim.new(0, 6)
-		    ChildrenLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		    ChildrenLayout.Parent = ChildrenHolder
+		    local DropdownObj = {}
 		
-		    -- Function to recalculate height dynamically
-		    local function UpdateTotalSize()
-		        local optionsHeight = isOpen and OptionsLayout.AbsoluteContentSize.Y or 0
-		        local childrenHeight = ChildrenLayout.AbsoluteContentSize.Y
-		        
-		        OptionsHolder.Size = UDim2.new(1, 0, 0, optionsHeight)
-		        ChildrenHolder.Size = UDim2.new(1, 0, 0, childrenHeight)
+		    local function ToggleDropdown(forceState)
+		        if forceState ~= nil then
+		            open = forceState
+		        else
+		            open = not open
+		        end
+		        local targetHeight = open and (35 + (#options * 25)) or 32
+		        SelectedButton.Text = selected .. (open and "  ▲" or "  ▼")
 		
-		        local totalHeight = 48 + (optionsHeight > 0 and (optionsHeight + 6) or 0) + (childrenHeight > 0 and (childrenHeight + 6) or 0)
+		        TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		            Size = UDim2.new(1, 0, 0, targetHeight)
+		        }):Play()
+		    end
 		
+		    local function UpdateContainerSize()
+		        local currentHolder = SubHolders[selected]
+		        local activeHeight = 0
+		
+		        if currentHolder and currentHolder.Visible then
+		            local layout = currentHolder:FindFirstChildOfClass("UIListLayout")
+		            if layout then
+		                activeHeight = layout.AbsoluteContentSize.Y
+		            end
+		        end
+		
+		        local totalHeight = 32 + (activeHeight > 0 and (activeHeight + 6) or 0)
 		        TweenService:Create(ContainerFrame, TweenInfo.new(0.2), {
 		            Size = UDim2.new(1, 0, 0, totalHeight)
 		        }):Play()
 		    end
 		
-		    OptionsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateTotalSize)
-		    ChildrenLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateTotalSize)
+		    local function SetSelected(option)
+		        selected = option or "None"
+		        Library.Flags[flag] = selected
+		        SelectedButton.Text = selected .. (open and "  ▲" or "  ▼")
 		
-		    -- Option creation logic
-		    local function RefreshOptions()
-		        for _, child in ipairs(OptionsHolder:GetChildren()) do
-		            if child:IsA("TextButton") then child:Destroy() end
+		        -- Toggle visibility for sub-containers
+		        for optName, holder in pairs(SubHolders) do
+		            local isCurrent = (optName == selected)
+		            holder.Visible = isCurrent
 		        end
 		
-		        for _, opt in ipairs(options) do
-		            local OptBtn = Instance.new("TextButton")
-		            OptBtn.Size = UDim2.new(1, 0, 0, 24)
-		            RegisterTheme(OptBtn, "BackgroundColor3", opt == selected and "Accent" or "Container")
-		            OptBtn.Text = "  " .. tostring(opt)
-		            RegisterTheme(OptBtn, "TextColor3", "Text")
-		            OptBtn.TextSize = 13
-		            OptBtn.Font = Enum.Font.SourceSans
-		            OptBtn.TextXAlignment = Enum.TextXAlignment.Left
-		            OptBtn.Parent = OptionsHolder
+		        UpdateContainerSize()
+		        callback(selected)
+		    end
 		
-		            local OptCorner = Instance.new("UICorner")
-		            OptCorner.CornerRadius = UDim.new(0, 4)
-		            OptCorner.Parent = OptBtn
+		    local function EnsureOptionHolder(optName)
+		        if not SubHolders[optName] then
+		            local Holder = Instance.new("Frame")
+		            Holder.Name = optName .. "_Holder"
+		            Holder.Size = UDim2.new(1, 0, 0, 0)
+		            Holder.BackgroundTransparency = 1
+		            Holder.Visible = (optName == selected)
+		            Holder.Parent = ContainerFrame
 		
-		            OptBtn.MouseButton1Click:Connect(function()
-		                selected = opt
-		                Library.Flags[flag] = selected
-		                ValueLabel.Text = tostring(selected)
-		                isOpen = false
-		                OptionsHolder.Visible = false
-		                Arrow.Text = "v"
-		                RefreshOptions()
-		                UpdateTotalSize()
-		                callback(selected)
+		            local Layout = Instance.new("UIListLayout")
+		            Layout.Padding = UDim.new(0, 6)
+		            Layout.SortOrder = Enum.SortOrder.LayoutOrder
+		            Layout.Parent = Holder
+		
+		            Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		                Holder.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
+		                if holder.Visible then
+		                    UpdateContainerSize()
+		                end
+		            end)
+		
+		            SubHolders[optName] = Holder
+		            OptionComponents[optName] = CreateComponents(Holder)
+		        end
+		        return OptionComponents[optName]
+		    end
+		
+		    local function BuildOptions()
+		        for _, child in ipairs(OptionsHolder:GetChildren()) do
+		            if child:IsA("TextButton") then
+		                child:Destroy()
+		            end
+		        end
+		
+		        OptionsHolder.Size = UDim2.new(1, -20, 0, #options * 25)
+		
+		        for _, option in ipairs(options) do
+		            EnsureOptionHolder(option)
+		
+		            local OptionBtn = Instance.new("TextButton")
+		            OptionBtn.Size = UDim2.new(1, 0, 0, 22)
+		            RegisterTheme(OptionBtn, "BackgroundColor3", "Background")
+		            OptionBtn.Text = option
+		            RegisterTheme(OptionBtn, "TextColor3", "MutedText")
+		            OptionBtn.TextSize = 12
+		            OptionBtn.Font = Enum.Font.SourceSans
+		            OptionBtn.AutoButtonColor = false
+		            OptionBtn.Parent = OptionsHolder
+		
+		            local OptionCorner = Instance.new("UICorner")
+		            OptionCorner.CornerRadius = UDim.new(0, 4)
+		            OptionCorner.Parent = OptionBtn
+		
+		            OptionBtn.MouseEnter:Connect(function()
+		                TweenService:Create(OptionBtn, TweenInfo.new(0.15), {
+		                    BackgroundColor3 = Library.Theme.Accent,
+		                    TextColor3 = Library.Theme.Text
+		                }):Play()
+		            end)
+		
+		            OptionBtn.MouseLeave:Connect(function()
+		                TweenService:Create(OptionBtn, TweenInfo.new(0.15), {
+		                    BackgroundColor3 = Library.Theme.Background,
+		                    TextColor3 = Library.Theme.MutedText
+		                }):Play()
+		            end)
+		
+		            OptionBtn.MouseButton1Click:Connect(function()
+		                SetSelected(option)
+		                ToggleDropdown(false)
 		            end)
 		        end
 		    end
 		
-		    RefreshOptions()
-		
-		    DropButton.MouseButton1Click:Connect(function()
-		        isOpen = not isOpen
-		        OptionsHolder.Visible = isOpen
-		        Arrow.Text = isOpen and "^" or "v"
-		        UpdateTotalSize()
+		    SelectedButton.MouseButton1Click:Connect(function()
+		        ToggleDropdown()
 		    end)
 		
-		    -- Bind child components to ChildrenHolder
-		    local DropdownObj = CreateComponents(ChildrenHolder)
+		    BuildOptions()
 		
-		    function DropdownObj:Set(val)
-		        selected = val
-		        Library.Flags[flag] = selected
-		        ValueLabel.Text = tostring(selected)
-		        RefreshOptions()
-		        callback(selected)
+		    -- Method to bind elements to specific dropdown options
+		    function DropdownObj:AddOptionElement(optionName, builderFunc)
+		        local comp = EnsureOptionHolder(optionName)
+		        if type(builderFunc) == "function" then
+		            builderFunc(comp)
+		        end
+		        UpdateContainerSize()
 		    end
 		
-		    function DropdownObj:Refresh(newOptions, newDefault)
+		    function DropdownObj:Set(option)
+		        SetSelected(option)
+		    end
+		
+		    function DropdownObj:Refresh(newOptions, targetSelection)
 		        options = newOptions or {}
-		        selected = newDefault or options[1] or ""
-		        Library.Flags[flag] = selected
-		        ValueLabel.Text = tostring(selected)
-		        RefreshOptions()
-		        UpdateTotalSize()
+		        BuildOptions()
+		        
+		        if open then
+		            DropdownFrame.Size = UDim2.new(1, 0, 0, 35 + (#options * 25))
+		        end
+		
+		        local newSelect = targetSelection or options[1] or "None"
+		        SetSelected(newSelect)
 		    end
 		
 		    Library.Elements[flag] = DropdownObj
 		    return DropdownObj
 		end
-
 		function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
 			if type(useAlpha) == "function" then
 				callback = useAlpha
