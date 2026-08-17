@@ -313,15 +313,15 @@ local function createPlayerESP(targetPlayer)
         local canRender = ESP.Settings.Enabled and teamCheckPassed and char and hrp and hum and hum.Health > 0
 
         if canRender then
-            -- Check update interval delay
+            -- Chams update runs every frame unfiltered by UpdateInterval
+            updateChams(targetPlayer, char)
+
+            -- Check update interval delay strictly for Drawing API ESP elements
             local now = tick()
             if ESP.Settings.UpdateInterval > 0 and (now - lastUpdate) < ESP.Settings.UpdateInterval then
                 return
             end
             lastUpdate = now
-
-            -- Process Chams render pass
-            updateChams(targetPlayer, char)
 
             -- Process Drawing API elements
             local _, onScreen = Camera:WorldToViewportPoint(hrp.Position)
