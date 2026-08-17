@@ -212,49 +212,45 @@ local function updateChams(targetPlayer, char)
     end
     chamsUpdateTick[targetPlayer] = now
 
-    local visible = true
-    if not ESP.Settings.Occluded_Chams then
-        visible = isCharacterVisible(char)
-    end
+    -- Determine visibility based on raycasting, or force visible/hidden if Occluded_Chams handles depth differently
+    local visible = isCharacterVisible(char)
 
-    if visible or ESP.Settings.Occluded_Chams then
-        if ESP.Settings.Cham_Type == "Highlight" then
-            cleanupAdornmentCache(char)
+    if ESP.Settings.Cham_Type == "Highlight" then
+        cleanupAdornmentCache(char)
 
-            local hl = char:FindFirstChild("ESPHighlight")
-            if not hl then
-                hl = Instance.new("Highlight")
-                hl.Name = "ESPHighlight"
-                hl.Adornee = char
-                hl.Parent = char
-            end
-
-            hl.FillColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
-            hl.FillTransparency = ESP.Settings.Highlight.FillTransparency
-            hl.OutlineColor = ESP.Settings.ESP_Glow_Color
-            hl.OutlineTransparency = ESP.Settings.Glow_Enabled and ESP.Settings.Highlight.OutlineTransparency or 1
-            hl.DepthMode = ESP.Settings.Occluded_Chams and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
-
-        elseif ESP.Settings.Cham_Type == "Adornment" then
-            destroyHighlight(char)
-
-            local cache = setupAdornmentCache(char)
-            local targetColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
-            local alwaysOnTop = ESP.Settings.Occluded_Chams
-
-            for _, box in ipairs(cache.BaseBoxes) do
-                box.Color3 = targetColor
-                box.AlwaysOnTop = alwaysOnTop
-                box.Transparency = ESP.Settings.Adornment.Transparency
-            end
-
-            for _, glowBox in ipairs(cache.GlowBoxes) do
-                glowBox.Color3 = ESP.Settings.ESP_Glow_Color
-                glowBox.AlwaysOnTop = ESP.Settings.Adornment.Glow_AlwaysOnTop and alwaysOnTop
-            end
+        local hl = char:FindFirstChild("ESPHighlight")
+        if not hl then
+            hl = Instance.new("Highlight")
+            hl.Name = "ESPHighlight"
+            hl.Adornee = char
+            hl.Parent = char
         end
-    else
-        destroyAllChams(char)
+
+        -- Correctly color based on visibility check regardless of occlusion setting, 
+        -- while allowing depth mode to dictate whether it renders through walls.
+        hl.FillColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
+        hl.FillTransparency = ESP.Settings.Highlight.FillTransparency
+        hl.OutlineColor = ESP.Settings.ESP_Glow_Color
+        hl.OutlineTransparency = ESP.Settings.Glow_Enabled and ESP.Settings.Highlight.OutlineTransparency or 1
+        hl.DepthMode = ESP.Settings.Occluded_Chams and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
+
+    elseif ESP.Settings.Cham_Type == "Adornment" then
+        destroyHighlight(char)
+
+        local cache = setupAdornmentCache(char)
+        local targetColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
+        local alwaysOnTop = ESP.Settings.Occluded_Chams
+
+        for _, box in ipairs(cache.BaseBoxes) do
+            box.Color3 = targetColor
+            box.AlwaysOnTop = alwaysOnTop
+            box.Transparency = ESP.Settings.Adornment.Transparency
+        end
+
+        for _, glowBox in ipairs(cache.GlowBoxes) do
+            glowBox.Color3 = ESP.Settings.ESP_Glow_Color
+            glowBox.AlwaysOnTop = ESP.Settings.Adornment.Glow_AlwaysOnTop and alwaysOnTop
+        end
     end
 end
 
