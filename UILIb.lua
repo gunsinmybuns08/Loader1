@@ -624,7 +624,12 @@ function Library:CreateWindow(titleText)
 			Button.MouseButton1Click:Connect(callback)
 		end
 
-		function Comp:AddLabel(text)
+	function Comp:AddLabel(text, flag)
+			if type(flag) == "function" then
+				flag = nil
+			end
+			flag = flag or text
+
 			local LabelFrame = Instance.new("Frame")
 			LabelFrame.Size = UDim2.new(1, 0, 0, 24)
 			LabelFrame.BackgroundTransparency = 1
@@ -645,6 +650,10 @@ function Library:CreateWindow(titleText)
 			local LabelObj = {}
 			function LabelObj:Set(newText)
 				Label.Text = newText
+			end
+
+			if flag then
+				Library.Elements[flag] = LabelObj
 			end
 
 			return LabelObj
