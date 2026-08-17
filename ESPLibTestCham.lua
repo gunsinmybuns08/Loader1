@@ -135,8 +135,12 @@ local function setupAdornmentCache(char)
         GlowBoxes = {}
     }
 
-    for _, b in ipairs(char:GetChildren()) do
-        if b:IsA("BasePart") and b.Name ~= "HumanoidRootPart" and b.Transparency ~= 1 then
+    -- Restrict to standard body parts to avoid looping through dozens of heavy accessories/clothes
+    local validParts = {"Head", "Torso", "UpperTorso", "LowerTorso", "Left Arm", "Right Arm", "Left Leg", "Right Leg", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot"}
+
+    for _, partName in ipairs(validParts) do
+        local b = char:FindFirstChild(partName)
+        if b and b:IsA("BasePart") then
             local chamsBox = Instance.new("BoxHandleAdornment")
             chamsBox.Name = "Chams"
             chamsBox.ZIndex = 10
@@ -146,8 +150,7 @@ local function setupAdornmentCache(char)
             table.insert(cache.BaseBoxes, chamsBox)
 
             if ESP.Settings.Glow_Enabled then
-                -- Respect a performance cap on max glow layers
-                local maxLayers = math.min(ESP.Settings.Adornment.Glow_Layers, 2) 
+                local maxLayers = math.min(ESP.Settings.Adornment.Glow_Layers, 1) -- Capped layers to save performance
                 for i = 1, maxLayers do
                     local glowBox = Instance.new("BoxHandleAdornment")
                     glowBox.Name = "Glow_Layer_" .. i
@@ -156,12 +159,7 @@ local function setupAdornmentCache(char)
                     
                     local offset = ESP.Settings.Adornment.Glow_Expansion * i
                     glowBox.Size = b.Size + Vector3.new(offset, offset, offset)
-                    
-                    local alpha = (i - 1) / math.max(maxLayers, 1)
-                    glowBox.Transparency = math.clamp(
-                        ESP.Settings.Adornment.Glow_Base_Transparency + (alpha * (1 - ESP.Settings.Adornment.Glow_Base_Transparency)),
-                        0, 1
-                    )
+                    glowBox.Transparency = ESP.Settings.Adornment.Glow_Base_Transparency
                     glowBox.Parent = b
                     table.insert(cache.GlowBoxes, glowBox)
                 end
