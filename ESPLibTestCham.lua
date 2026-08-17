@@ -212,8 +212,11 @@ local function updateChams(targetPlayer, char)
     end
     chamsUpdateTick[targetPlayer] = now
 
-    -- Determine visibility based on raycasting, or force visible/hidden if Occluded_Chams handles depth differently
+    -- Check if the character is visible (not blocked by walls/objects)
     local visible = isCharacterVisible(char)
+    
+    -- Pick the color based on visibility: if visible use Visible color, otherwise use Hidden (occluded) color
+    local targetColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
 
     if ESP.Settings.Cham_Type == "Highlight" then
         cleanupAdornmentCache(char)
@@ -226,9 +229,7 @@ local function updateChams(targetPlayer, char)
             hl.Parent = char
         end
 
-        -- Correctly color based on visibility check regardless of occlusion setting, 
-        -- while allowing depth mode to dictate whether it renders through walls.
-        hl.FillColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
+        hl.FillColor = targetColor
         hl.FillTransparency = ESP.Settings.Highlight.FillTransparency
         hl.OutlineColor = ESP.Settings.ESP_Glow_Color
         hl.OutlineTransparency = ESP.Settings.Glow_Enabled and ESP.Settings.Highlight.OutlineTransparency or 1
@@ -238,7 +239,6 @@ local function updateChams(targetPlayer, char)
         destroyHighlight(char)
 
         local cache = setupAdornmentCache(char)
-        local targetColor = visible and ESP.Settings.Chams_Color_Visible or ESP.Settings.Chams_Color_Hidden
         local alwaysOnTop = ESP.Settings.Occluded_Chams
 
         for _, box in ipairs(cache.BaseBoxes) do
