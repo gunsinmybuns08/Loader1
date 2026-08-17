@@ -1200,7 +1200,7 @@ function Library:CreateWindow(titleText)
 		    Library.Elements[flag] = DropdownObj
 		    return DropdownObj
 		end
-function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
+	function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
 			if type(useAlpha) == "function" then
 				callback = useAlpha
 				flag = text
@@ -1398,7 +1398,6 @@ function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, c
 				SVCorner.CornerRadius = UDim.new(0, 3)
 				SVCorner.Parent = SVCanvas
 
-				-- 1. Horizontal White Saturation Overlay (White -> Transparent, left-to-right)
 				local SaturationOverlay = Instance.new("Frame")
 				SaturationOverlay.Size = UDim2.new(1, 0, 1, 0)
 				SaturationOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -1418,7 +1417,6 @@ function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, c
 				})
 				SaturationGradient.Parent = SaturationOverlay
 
-				-- 2. Vertical Black Value Overlay (Transparent -> Black, top-to-bottom)
 				local ValueOverlay = Instance.new("Frame")
 				ValueOverlay.Size = UDim2.new(1, 0, 1, 0)
 				ValueOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -1613,13 +1611,17 @@ function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, c
 					SVKnob.Position = UDim2.new(s, 0, 1 - v, 0)
 
 					if not skipInputs then
-						rBox.Text = "R: " .. math.floor(currentColor.R * 255)
-						gBox.Text = "G: " .. math.floor(currentColor.G * 255)
-						bBox.Text = "B: " .. math.floor(currentColor.B * 255)
+						local r255 = math.floor(currentColor.R * 255 + 0.5)
+						local g255 = math.floor(currentColor.G * 255 + 0.5)
+						local b255 = math.floor(currentColor.B * 255 + 0.5)
 
-						hBox.Text = "H: " .. math.floor(h * 360)
-						sBox.Text = "S: " .. math.floor(s * 100)
-						vBox.Text = "V: " .. math.floor(v * 100)
+						rBox.Text = "R: " .. r255
+						gBox.Text = "G: " .. g255
+						bBox.Text = "B: " .. b255
+
+						hBox.Text = "H: " .. math.floor(h * 360 + 0.5)
+						sBox.Text = "S: " .. math.floor(s * 100 + 0.5)
+						vBox.Text = "V: " .. math.floor(v * 100 + 0.5)
 
 						HexBox.Text = "#" .. currentColor:ToHex():upper()
 					end
@@ -1629,6 +1631,53 @@ function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, c
 						AlphaFill.Size = UDim2.new(currentAlpha, 0, 1, 0)
 					end
 				end
+
+				local function ParseInputVal(str)
+					return tonumber(str:match("%d+"))
+				end
+
+				local function ConnectRGBInput(box, component)
+					box.FocusLost:Connect(function()
+						local val = ParseInputVal(box.Text)
+						if val then
+							val = math.clamp(val, 0, 255) / 255
+							local r = component == "R" and val or currentColor.R
+							local g = component == "G" and val or currentColor.G
+							local b = component == "B" and val or currentColor.B
+							local tempColor = Color3.new(r, g, b)
+							h, s, v = tempColor:ToHSV()
+							UpdateColor()
+						else
+							UpdateColor()
+						end
+					end)
+				end
+
+				ConnectRGBInput(rBox, "R")
+				ConnectRGBInput(gBox, "G")
+				ConnectRGBInput(bBox, "B")
+
+				local function ConnectHSVInput(box, component)
+					box.FocusLost:Connect(function()
+						local val = ParseInputVal(box.Text)
+						if val then
+							if component == "H" then
+								h = math.clamp(val, 0, 360) / 360
+							elseif component == "S" then
+								s = math.clamp(val, 0, 100) / 100
+							elseif component == "V" then
+								v = math.clamp(val, 0, 100) / 100
+							end
+							UpdateColor()
+						else
+							UpdateColor()
+						end
+					end)
+				end
+
+				ConnectHSVInput(hBox, "H")
+				ConnectHSVInput(sBox, "S")
+				ConnectHSVInput(vBox, "V")
 
 				HueBar.InputBegan:Connect(function(input)
 					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
