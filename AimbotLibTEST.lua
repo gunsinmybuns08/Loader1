@@ -101,28 +101,27 @@ end
 
 -- Target selection algorithm with Workspace fallback
 function Aimbot:getClosestPlr()
+    -- 1. Local Root Validation (Run once before loop)
     local localRoot = getLocalRootPart()
     if not localRoot then return nil end
-
-    -- Check if custom subfolder exists; otherwise fall back to workspace directly
-    local targetFolder = Workspace:FindFirstChild(self.Config.subFolderName)
-    local characterList = targetFolder and targetFolder:GetChildren() or Workspace:GetChildren()
 
     local closestDistance = math.huge
     local closestPlayer = nil
     local mouseLocation = UserInputService:GetMouseLocation()
+    local rootPosition = localRoot.Position
 
-    for _, model in ipairs(characterList) do
-        -- Convert character Model from Workspace/subfolder to Player object
-        local player = Players:GetPlayerFromCharacter(model)
-
-        if player and self:IsEnemy(player) then
-            local targetPart = getTargetPart(player, self.Config.targetHitbox)
+    for _, player in ipairs(Players:GetPlayers()) do
+        -- 2. Cheap Lightweight Filters (Team and health validation)
+        if self:IsEnemy(player) then
+            local character = player.Character
+            local targetPart = getTargetPart(character, self.Config.targetHitbox)
 
             if targetPart then
-                local worldDistance = (localRoot.Position - targetPart.Position).Magnitude
+                -- 3. 3D World Distance Check (Evaluated before screen projection)
+                local worldDistance = (rootPosition - targetPart.Position).Magnitude
                 
                 if worldDistance <= self.Config.maxDistance then
+                    -- 4. Expensive Screen Projection & FOV Calculation (Evaluated last)
                     if self.Config.targetSelectionMode == "FOV" then
                         local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
                         if onScreen then
@@ -145,7 +144,6 @@ function Aimbot:getClosestPlr()
 
     return closestPlayer
 end
-
 -- Aiming implementation
 function Aimbot:AimMouse(targetPart, deltaTime)
     local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
