@@ -1385,10 +1385,11 @@ function Library:CreateWindow(titleText)
 				PickerHolder.ZIndex = 101
 				PickerHolder.Parent = Window
 
+				-- Base canvas displays pure Hue color (h, 1, 1)
 				local SVCanvas = Instance.new("TextButton")
 				SVCanvas.Size = UDim2.new(0, 130, 0, 120)
 				SVCanvas.Position = UDim2.new(0, 0, 0, 0)
-				SVCanvas.BackgroundColor3 = currentColor
+				SVCanvas.BackgroundColor3 = Color3.fromHSV(currentColor:ToHSV(), 1, 1)
 				SVCanvas.AutoButtonColor = false
 				SVCanvas.Text = ""
 				SVCanvas.ZIndex = 102
@@ -1398,11 +1399,13 @@ function Library:CreateWindow(titleText)
 				SVCorner.CornerRadius = UDim.new(0, 3)
 				SVCorner.Parent = SVCanvas
 
+				-- Layer 1: Horizontal Saturation Overlay (White at left -> Transparent at right)
 				local SaturationOverlay = Instance.new("Frame")
 				SaturationOverlay.Size = UDim2.new(1, 0, 1, 0)
 				SaturationOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				SaturationOverlay.BackgroundTransparency = 0
 				SaturationOverlay.BorderSizePixel = 0
-				SaturationOverlay.ZIndex = 102
+				SaturationOverlay.ZIndex = 103
 				SaturationOverlay.Parent = SVCanvas
 
 				local SatCorner = Instance.new("UICorner")
@@ -1412,16 +1415,18 @@ function Library:CreateWindow(titleText)
 				local SaturationGradient = Instance.new("UIGradient")
 				SaturationGradient.Rotation = 0
 				SaturationGradient.Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 0),
-					NumberSequenceKeypoint.new(1, 1)
+					NumberSequenceKeypoint.new(0, 0), -- White
+					NumberSequenceKeypoint.new(1, 1)  -- Transparent (shows base Hue)
 				})
 				SaturationGradient.Parent = SaturationOverlay
 
+				-- Layer 2: Vertical Value Overlay (Transparent at top -> Opaque Black at bottom)
 				local ValueOverlay = Instance.new("Frame")
 				ValueOverlay.Size = UDim2.new(1, 0, 1, 0)
 				ValueOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+				ValueOverlay.BackgroundTransparency = 0
 				ValueOverlay.BorderSizePixel = 0
-				ValueOverlay.ZIndex = 103
+				ValueOverlay.ZIndex = 104
 				ValueOverlay.Parent = SVCanvas
 
 				local ValCorner = Instance.new("UICorner")
@@ -1431,8 +1436,8 @@ function Library:CreateWindow(titleText)
 				local ValueGradient = Instance.new("UIGradient")
 				ValueGradient.Rotation = 90
 				ValueGradient.Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 1),
-					NumberSequenceKeypoint.new(1, 0)
+					NumberSequenceKeypoint.new(0, 1), -- Transparent (shows Saturation/Hue)
+					NumberSequenceKeypoint.new(1, 0)  -- Solid Black at bottom edge
 				})
 				ValueGradient.Parent = ValueOverlay
 
@@ -1441,7 +1446,7 @@ function Library:CreateWindow(titleText)
 				SVKnob.AnchorPoint = Vector2.new(0.5, 0.5)
 				SVKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 				SVKnob.BorderSizePixel = 0
-				SVKnob.ZIndex = 104
+				SVKnob.ZIndex = 105
 				SVKnob.Parent = SVCanvas
 
 				local KnobCorner = Instance.new("UICorner")
