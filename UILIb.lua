@@ -442,7 +442,13 @@ function Library:CreateWindow(titleText)
 		MainFrame.Visible = not MainFrame.Visible
 		self.windowVisible = MainFrame.Visible
 	
-		if self.windowVisible then
+		if not self.windowVisible then
+			-- Close active colorpicker when menu is toggled off
+			if Library.ActiveColorpicker then
+				Library.ActiveColorpicker:Destroy()
+				Library.ActiveColorpicker = nil
+			end
+		else
 			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 			UserInputService.MouseIconEnabled = true
 		end
@@ -462,6 +468,8 @@ function Library:CreateWindow(titleText)
 			UserInputService.MouseIconEnabled = true
 		end
 	end)
+
+	
 	
 	local Title = Instance.new("TextLabel")
 	Title.Size = UDim2.new(1, -20, 0, 35)
@@ -976,7 +984,7 @@ function Library:CreateWindow(titleText)
 		    Library.Flags[flag] = selected
 		    local open = false
 		
-		    -- Outer container holding the dropdown bar and the active sub-element holder
+		    -- Outer container wrapping the dropdown frame and option sub-elements
 		    local ContainerFrame = Instance.new("Frame")
 		    ContainerFrame.Name = text .. "_DropdownContainer"
 		    ContainerFrame.Size = UDim2.new(1, 0, 0, 32)
@@ -1038,11 +1046,33 @@ function Library:CreateWindow(titleText)
 		    OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		    OptionsLayout.Parent = OptionsHolder
 		
-		    -- Container holding option-specific UI elements
 		    local SubHolders = {}
 		    local OptionComponents = {}
-		
 		    local DropdownObj = {}
+		
+		    -- Function to adjust ContainerFrame size when the dropdown state changes
+		    local function UpdateContainerHeight()
+		        local currentSub = SubHolders[selected]
+		        local subHeight = 0
+		
+		        if currentSub and currentSub.Visible then
+		            local layout = currentSub:FindFirstChildOfClass("UIListLayout")
+		            if layout then
+		                subHeight = layout.AbsoluteContentSize.Y
+		            end
+		        end
+		
+		        local dropdownHeight = open and (35 + (#options * 25)) or 32
+		        local totalHeight = dropdownHeight + (subHeight > 0 and (subHeight + 6) or 0)
+		
+		        TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		            Size = UDim2.new(1, 0, 0, dropdownHeight)
+		        }):Play()
+		
+		        TweenService:Create(ContainerFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		            Size = UDim2.new(1, 0, 0, totalHeight)
+		        }):Play()
+		    end
 		
 		    local function ToggleDropdown(forceState)
 		        if forceState ~= nil then
@@ -1050,29 +1080,8 @@ function Library:CreateWindow(titleText)
 		        else
 		            open = not open
 		        end
-		        local targetHeight = open and (35 + (#options * 25)) or 32
 		        SelectedButton.Text = selected .. (open and "  ▲" or "  ▼")
-		
-		        TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		            Size = UDim2.new(1, 0, 0, targetHeight)
-		        }):Play()
-		    end
-		
-		    local function UpdateContainerSize()
-		        local currentHolder = SubHolders[selected]
-		        local activeHeight = 0
-		
-		        if currentHolder and currentHolder.Visible then
-		            local layout = currentHolder:FindFirstChildOfClass("UIListLayout")
-		            if layout then
-		                activeHeight = layout.AbsoluteContentSize.Y
-		            end
-		        end
-		
-		        local totalHeight = 32 + (activeHeight > 0 and (activeHeight + 6) or 0)
-		        TweenService:Create(ContainerFrame, TweenInfo.new(0.2), {
-		            Size = UDim2.new(1, 0, 0, totalHeight)
-		        }):Play()
+		        UpdateContainerHeight()
 		    end
 		
 		    local function SetSelected(option)
@@ -1080,13 +1089,11 @@ function Library:CreateWindow(titleText)
 		        Library.Flags[flag] = selected
 		        SelectedButton.Text = selected .. (open and "  ▲" or "  ▼")
 		
-		        -- Toggle visibility for sub-containers
 		        for optName, holder in pairs(SubHolders) do
-		            local isCurrent = (optName == selected)
-		            holder.Visible = isCurrent
+		            holder.Visible = (optName == selected)
 		        end
 		
-		        UpdateContainerSize()
+		        UpdateContainerHeight()
 		        callback(selected)
 		    end
 		
@@ -1106,8 +1113,8 @@ function Library:CreateWindow(titleText)
 		
 		            Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 		                Holder.Size = UDim2.new(1, 0, 0, Layout.AbsoluteContentSize.Y)
-		                if holder.Visible then
-		                    UpdateContainerSize()
+		                if Holder.Visible then
+		                    UpdateContainerHeight()
 		                end
 		            end)
 		
@@ -1170,13 +1177,12 @@ function Library:CreateWindow(titleText)
 		
 		    BuildOptions()
 		
-		    -- Method to bind elements to specific dropdown options
 		    function DropdownObj:AddOptionElement(optionName, builderFunc)
 		        local comp = EnsureOptionHolder(optionName)
 		        if type(builderFunc) == "function" then
 		            builderFunc(comp)
 		        end
-		        UpdateContainerSize()
+		        UpdateContainerHeight()
 		    end
 		
 		    function DropdownObj:Set(option)
@@ -1187,10 +1193,6 @@ function Library:CreateWindow(titleText)
 		        options = newOptions or {}
 		        BuildOptions()
 		        
-		        if open then
-		            DropdownFrame.Size = UDim2.new(1, 0, 0, 35 + (#options * 25))
-		        end
-		
 		        local newSelect = targetSelection or options[1] or "None"
 		        SetSelected(newSelect)
 		    end
@@ -1396,17 +1398,38 @@ function Library:CreateWindow(titleText)
 				SVCorner.CornerRadius = UDim.new(0, 3)
 				SVCorner.Parent = SVCanvas
 
+				-- Vertical Black/Darkness Gradient (Value)
 				local ValueGradient = Instance.new("UIGradient")
 				ValueGradient.Rotation = 90
 				ValueGradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0))
 				ValueGradient.Parent = SVCanvas
+
+				-- Horizontal White Gradient Overlay (Saturation)
+				local SaturationOverlay = Instance.new("Frame")
+				SaturationOverlay.Size = UDim2.new(1, 0, 1, 0)
+				SaturationOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+				SaturationOverlay.BorderSizePixel = 0
+				SaturationOverlay.ZIndex = 102
+				SaturationOverlay.Parent = SVCanvas
+
+				local SatCorner = Instance.new("UICorner")
+				SatCorner.CornerRadius = UDim.new(0, 3)
+				SatCorner.Parent = SaturationOverlay
+
+				local SaturationGradient = Instance.new("UIGradient")
+				SaturationGradient.Rotation = 0
+				SaturationGradient.Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0),
+					NumberSequenceKeypoint.new(1, 1)
+				})
+				SaturationGradient.Parent = SaturationOverlay
 
 				local SVKnob = Instance.new("Frame")
 				SVKnob.Size = UDim2.new(0, 8, 0, 8)
 				SVKnob.AnchorPoint = Vector2.new(0.5, 0.5)
 				SVKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 				SVKnob.BorderSizePixel = 0
-				SVKnob.ZIndex = 103
+				SVKnob.ZIndex = 104
 				SVKnob.Parent = SVCanvas
 
 				local KnobCorner = Instance.new("UICorner")
@@ -1460,6 +1483,7 @@ function Library:CreateWindow(titleText)
 				CurrentBox.Size = UDim2.new(1, 0, 0, 32)
 				CurrentBox.Position = UDim2.new(0, 0, 0, 15)
 				CurrentBox.BackgroundColor3 = currentColor
+				CurrentBox.BackgroundTransparency = 0 -- Opaque display
 				CurrentBox.BorderSizePixel = 0
 				CurrentBox.ZIndex = 102
 				CurrentBox.Parent = SwatchesFrame
@@ -1480,6 +1504,7 @@ function Library:CreateWindow(titleText)
 				OriginalBox.Size = UDim2.new(1, 0, 0, 32)
 				OriginalBox.Position = UDim2.new(0, 0, 0, 67)
 				OriginalBox.BackgroundColor3 = originalColor
+				OriginalBox.BackgroundTransparency = 0
 				OriginalBox.BorderSizePixel = 0
 				OriginalBox.ZIndex = 102
 				OriginalBox.Parent = SwatchesFrame
@@ -1569,6 +1594,7 @@ function Library:CreateWindow(titleText)
 					SetColor(newCol, currentAlpha)
 
 					CurrentBox.BackgroundColor3 = currentColor
+					CurrentBox.BackgroundTransparency = 0
 					SVCanvas.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
 					SVKnob.Position = UDim2.new(s, 0, 1 - v, 0)
 
