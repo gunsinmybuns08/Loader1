@@ -35,7 +35,6 @@ Aimbot.Config = {
     targetNeutral = false,
     
     targetHitbox = "Head",
-    subFolderName = "PLAYERS",   -- Folder inside Workspace containing character models
     enabled = true
 }
 
@@ -99,9 +98,8 @@ function Aimbot:IsEnemy(player)
     return player.Team ~= LocalPlayer.Team
 end
 
--- Target selection algorithm with Workspace fallback
+-- Target selection algorithm parsing all active players directly
 function Aimbot:getClosestPlr()
-    -- 1. Local Root Validation (Run once before loop)
     local localRoot = getLocalRootPart()
     if not localRoot then return nil end
 
@@ -111,17 +109,14 @@ function Aimbot:getClosestPlr()
     local rootPosition = localRoot.Position
 
     for _, player in ipairs(Players:GetPlayers()) do
-        -- 2. Cheap Lightweight Filters (Team and health validation)
         if self:IsEnemy(player) then
             local character = player.Character
             local targetPart = getTargetPart(character, self.Config.targetHitbox)
 
             if targetPart then
-                -- 3. 3D World Distance Check (Evaluated before screen projection)
                 local worldDistance = (rootPosition - targetPart.Position).Magnitude
                 
                 if worldDistance <= self.Config.maxDistance then
-                    -- 4. Expensive Screen Projection & FOV Calculation (Evaluated last)
                     if self.Config.targetSelectionMode == "FOV" then
                         local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
                         if onScreen then
@@ -144,6 +139,7 @@ function Aimbot:getClosestPlr()
 
     return closestPlayer
 end
+
 -- Aiming implementation
 function Aimbot:AimMouse(targetPart, deltaTime)
     local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
@@ -214,7 +210,7 @@ function Aimbot:Toggle(state)
 end
 
 function Aimbot:Init()
-    self:Destroy() -- Safe re-initialization reset
+    self:Destroy() 
     createFOVCircle()
 
     renderConnection = RunService.RenderStepped:Connect(function(deltaTime)
