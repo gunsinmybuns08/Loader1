@@ -54,9 +54,9 @@ local function isAliveAndValid(player)
     return humanoid and humanoid.Health > 0
 end
 
-local function getTargetPart(player, partName)
-    if player and player.Character then
-        return player.Character:FindFirstChild(partName) or player.Character:FindFirstChild("HumanoidRootPart")
+local function getTargetPart(character, partName)
+    if character then
+        return character:FindFirstChild(partName) or character:FindFirstChild("HumanoidRootPart")
     end
     return nil
 end
