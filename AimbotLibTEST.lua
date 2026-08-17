@@ -225,12 +225,10 @@ function Aimbot:Init()
     local function isMatchingBind(input, bind)
         if not bind then return false end
         
-        -- Check KeyCode (for keyboard buttons like E, Shift, Q)
         if input.KeyCode == bind then
             return true
         end
         
-        -- Check UserInputType (for mouse buttons like MouseButton1, MouseButton2)
         if input.UserInputType == bind then
             return true
         end
