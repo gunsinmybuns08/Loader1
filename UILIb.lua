@@ -1200,7 +1200,7 @@ function Library:CreateWindow(titleText)
 		    Library.Elements[flag] = DropdownObj
 		    return DropdownObj
 		end
-		function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
+function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
 			if type(useAlpha) == "function" then
 				callback = useAlpha
 				flag = text
@@ -1398,13 +1398,7 @@ function Library:CreateWindow(titleText)
 				SVCorner.CornerRadius = UDim.new(0, 3)
 				SVCorner.Parent = SVCanvas
 
-				-- Vertical Black/Darkness Gradient (Value)
-				local ValueGradient = Instance.new("UIGradient")
-				ValueGradient.Rotation = 90
-				ValueGradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(0, 0, 0))
-				ValueGradient.Parent = SVCanvas
-
-				-- Horizontal White Gradient Overlay (Saturation)
+				-- 1. Horizontal White Saturation Overlay (White -> Transparent, left-to-right)
 				local SaturationOverlay = Instance.new("Frame")
 				SaturationOverlay.Size = UDim2.new(1, 0, 1, 0)
 				SaturationOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -1423,6 +1417,26 @@ function Library:CreateWindow(titleText)
 					NumberSequenceKeypoint.new(1, 1)
 				})
 				SaturationGradient.Parent = SaturationOverlay
+
+				-- 2. Vertical Black Value Overlay (Transparent -> Black, top-to-bottom)
+				local ValueOverlay = Instance.new("Frame")
+				ValueOverlay.Size = UDim2.new(1, 0, 1, 0)
+				ValueOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+				ValueOverlay.BorderSizePixel = 0
+				ValueOverlay.ZIndex = 103
+				ValueOverlay.Parent = SVCanvas
+
+				local ValCorner = Instance.new("UICorner")
+				ValCorner.CornerRadius = UDim.new(0, 3)
+				ValCorner.Parent = ValueOverlay
+
+				local ValueGradient = Instance.new("UIGradient")
+				ValueGradient.Rotation = 90
+				ValueGradient.Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 1),
+					NumberSequenceKeypoint.new(1, 0)
+				})
+				ValueGradient.Parent = ValueOverlay
 
 				local SVKnob = Instance.new("Frame")
 				SVKnob.Size = UDim2.new(0, 8, 0, 8)
@@ -1483,7 +1497,7 @@ function Library:CreateWindow(titleText)
 				CurrentBox.Size = UDim2.new(1, 0, 0, 32)
 				CurrentBox.Position = UDim2.new(0, 0, 0, 15)
 				CurrentBox.BackgroundColor3 = currentColor
-				CurrentBox.BackgroundTransparency = 0 -- Opaque display
+				CurrentBox.BackgroundTransparency = 0
 				CurrentBox.BorderSizePixel = 0
 				CurrentBox.ZIndex = 102
 				CurrentBox.Parent = SwatchesFrame
