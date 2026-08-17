@@ -275,7 +275,8 @@ local function createPlayerESP(targetPlayer)
         HealthFill = Drawing.new("Line"),
         HeadDot = Drawing.new("Circle"),
         HeadLine = Drawing.new("Line"),
-        Skeleton = {}
+        Skeleton = {},
+        LastUpdate = 0
     }
 
     objects.Name.Center = true
@@ -312,178 +313,174 @@ local function createPlayerESP(targetPlayer)
         table.insert(objects.Skeleton, line)
     end
 
-    local lastUpdate = 0
+    ActiveESP[targetPlayer] = objects
+end
 
-    local renderConn
-    renderConn = RunService.RenderStepped:Connect(function()
-        local char = targetPlayer.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+local function updatePlayerESP(targetPlayer, objects)
+    local char = targetPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
-        local teamCheckPassed = not ESP.Settings.TeamCheck or (targetPlayer.Team ~= LocalPlayer.Team)
-        local canRender = ESP.Settings.Enabled and teamCheckPassed and char and hrp and hum and hum.Health > 0
+    local teamCheckPassed = not ESP.Settings.TeamCheck or (targetPlayer.Team ~= LocalPlayer.Team)
+    local canRender = ESP.Settings.Enabled and teamCheckPassed and char and hrp and hum and hum.Health > 0
 
-        if canRender then
-            updateChams(targetPlayer, char)
+    if canRender then
+        updateChams(targetPlayer, char)
 
-            local now = tick()
-            if ESP.Settings.UpdateInterval > 0 and (now - lastUpdate) < ESP.Settings.UpdateInterval then
-                return
+        local now = tick()
+        if ESP.Settings.UpdateInterval > 0 and (now - objects.LastUpdate) < ESP.Settings.UpdateInterval then
+            return
+        end
+        objects.LastUpdate = now
+
+        local _, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+        if onScreen then
+            local scale = (char:FindFirstChild("Head") and char.Head.Size.Y / 2) or 1
+            local size = Vector3.new(2, 3, 0) * (scale * 2)
+            local boxCFrame = CFrame.new(hrp.Position, Camera.CFrame.Position)
+
+            local TL = Camera:WorldToViewportPoint((boxCFrame * CFrame.new(-size.X, size.Y, 0)).Position)
+            local TR = Camera:WorldToViewportPoint((boxCFrame * CFrame.new(size.X, size.Y, 0)).Position)
+            local BL = Camera:WorldToViewportPoint((boxCFrame * CFrame.new(-size.X, -size.Y, 0)).Position)
+            local BR = Camera:WorldToViewportPoint((boxCFrame * CFrame.new(size.X, -size.Y, 0)).Position)
+
+            local minX = math.min(TL.X, TR.X, BL.X, BR.X)
+            local maxX = math.max(TL.X, TR.X, BL.X, BR.X)
+            local minY = math.min(TL.Y, TR.Y, BL.Y, BR.Y)
+            local maxY = math.max(TL.Y, TR.Y, BL.Y, BR.Y)
+
+            local distance = (Camera.CFrame.Position - hrp.Position).Magnitude
+            local fontScale = math.clamp(1000 / distance, ESP.Settings.MinFontSize, ESP.Settings.MaxFontSize)
+
+            if ESP.Settings.Names then
+                objects.Name.Position = Vector2.new(minX + ((maxX - minX) / 2), minY - fontScale - 2)
+                objects.Name.Size = fontScale
+                objects.Name.Text = targetPlayer.Name
+                objects.Name.Color = ESP.Settings.TextColor
+                objects.Name.Visible = true
+            else
+                objects.Name.Visible = false
             end
-            lastUpdate = now
 
-            local _, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-            if onScreen then
-                local scale = (char:FindFirstChild("Head") and char.Head.Size.Y / 2) or 1
-                local size = Vector3.new(2, 3, 0) * (scale * 2)
-                local boxCFrame = CFrame.new(hrp.Position, Camera.CFrame.Position)
+            if ESP.Settings.Boxes then
+                local topLeft = Vector2.new(minX, minY)
+                local topRight = Vector2.new(maxX, minY)
+                local bottomLeft = Vector2.new(minX, maxY)
+                local bottomRight = Vector2.new(maxX, maxY)
 
-                local TL = Camera:WorldToViewportPoint((boxCFrame * CFrame.new(-size.X, size.Y, 0)).Position)
-                local TR = Camera:WorldToViewportPoint((boxCFrame * CFrame.new(size.X, size.Y, 0)).Position)
-                local BL = Camera:WorldToViewportPoint((boxCFrame * CFrame.new(-size.X, -size.Y, 0)).Position)
-                local BR = Camera:WorldToViewportPoint((boxCFrame * CFrame.new(size.X, -size.Y, 0)).Position)
+                objects.Top.From, objects.Top.To = topLeft, topRight
+                objects.Left.From, objects.Left.To = topLeft, bottomLeft
+                objects.Right.From, objects.Right.To = topRight, bottomRight
+                objects.Bottom.From, objects.Bottom.To = bottomLeft, bottomRight
 
-                local minX = math.min(TL.X, TR.X, BL.X, BR.X)
-                local maxX = math.max(TL.X, TR.X, BL.X, BR.X)
-                local minY = math.min(TL.Y, TR.Y, BL.Y, BR.Y)
-                local maxY = math.max(TL.Y, TR.Y, BL.Y, BR.Y)
+                objects.TopOutline.From, objects.TopOutline.To = topLeft, topRight
+                objects.LeftOutline.From, objects.LeftOutline.To = topLeft, bottomLeft
+                objects.RightOutline.From, objects.RightOutline.To = topRight, bottomRight
+                objects.BottomOutline.From, objects.BottomOutline.To = bottomLeft, bottomRight
 
-                local distance = (Camera.CFrame.Position - hrp.Position).Magnitude
-                local fontScale = math.clamp(1000 / distance, ESP.Settings.MinFontSize, ESP.Settings.MaxFontSize)
+                objects.Top.Color = ESP.Settings.BoxColor
+                objects.Left.Color = ESP.Settings.BoxColor
+                objects.Right.Color = ESP.Settings.BoxColor
+                objects.Bottom.Color = ESP.Settings.BoxColor
 
-                if ESP.Settings.Names then
-                    objects.Name.Position = Vector2.new(minX + ((maxX - minX) / 2), minY - fontScale - 2)
-                    objects.Name.Size = fontScale
-                    objects.Name.Text = targetPlayer.Name
-                    objects.Name.Color = ESP.Settings.TextColor
-                    objects.Name.Visible = true
-                else
-                    objects.Name.Visible = false
-                end
+                objects.TopOutline.Color = ESP.Settings.OutlineColor
+                objects.LeftOutline.Color = ESP.Settings.OutlineColor
+                objects.RightOutline.Color = ESP.Settings.OutlineColor
+                objects.BottomOutline.Color = ESP.Settings.OutlineColor
 
-                if ESP.Settings.Boxes then
-                    local topLeft = Vector2.new(minX, minY)
-                    local topRight = Vector2.new(maxX, minY)
-                    local bottomLeft = Vector2.new(minX, maxY)
-                    local bottomRight = Vector2.new(maxX, maxY)
+                objects.Top.Visible = true
+                objects.Left.Visible = true
+                objects.Right.Visible = true
+                objects.Bottom.Visible = true
+                objects.TopOutline.Visible = true
+                objects.LeftOutline.Visible = true
+                objects.RightOutline.Visible = true
+                objects.BottomOutline.Visible = true
+            else
+                objects.Top.Visible = false
+                objects.Left.Visible = false
+                objects.Right.Visible = false
+                objects.Bottom.Visible = false
+                objects.TopOutline.Visible = false
+                objects.LeftOutline.Visible = false
+                objects.RightOutline.Visible = false
+                objects.BottomOutline.Visible = false
+            end
 
-                    objects.Top.From, objects.Top.To = topLeft, topRight
-                    objects.Left.From, objects.Left.To = topLeft, bottomLeft
-                    objects.Right.From, objects.Right.To = topRight, bottomRight
-                    objects.Bottom.From, objects.Bottom.To = bottomLeft, bottomRight
+            if ESP.Settings.HealthBars then
+                local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                local barX = minX - 5
+                local barHeight = maxY - minY
+                local healthHeight = barHeight * healthPercent
 
-                    objects.TopOutline.From, objects.TopOutline.To = topLeft, topRight
-                    objects.LeftOutline.From, objects.LeftOutline.To = topLeft, bottomLeft
-                    objects.RightOutline.From, objects.RightOutline.To = topRight, bottomRight
-                    objects.BottomOutline.From, objects.BottomOutline.To = bottomLeft, bottomRight
+                objects.HealthBg.From = Vector2.new(barX, minY)
+                objects.HealthBg.To = Vector2.new(barX, maxY)
+                objects.HealthBg.Visible = true
 
-                    objects.Top.Color = ESP.Settings.BoxColor
-                    objects.Left.Color = ESP.Settings.BoxColor
-                    objects.Right.Color = ESP.Settings.BoxColor
-                    objects.Bottom.Color = ESP.Settings.BoxColor
+                objects.HealthFill.From = Vector2.new(barX, maxY)
+                objects.HealthFill.To = Vector2.new(barX, maxY - healthHeight)
+                objects.HealthFill.Color = Color3.fromRGB(255 - (healthPercent * 255), healthPercent * 255, 0)
+                objects.HealthFill.Visible = true
+            else
+                objects.HealthBg.Visible = false
+                objects.HealthFill.Visible = false
+            end
 
-                    objects.TopOutline.Color = ESP.Settings.OutlineColor
-                    objects.LeftOutline.Color = ESP.Settings.OutlineColor
-                    objects.RightOutline.Color = ESP.Settings.OutlineColor
-                    objects.BottomOutline.Color = ESP.Settings.OutlineColor
+            if ESP.Settings.Skeletons then
+                local connections = (hum.RigType == Enum.HumanoidRigType.R15) and R15Connections or R6Connections
+                for i, pair in ipairs(connections) do
+                    local partA, partB = char:FindFirstChild(pair[1]), char:FindFirstChild(pair[2])
+                    local line = objects.Skeleton[i]
 
-                    objects.Top.Visible = true
-                    objects.Left.Visible = true
-                    objects.Right.Visible = true
-                    objects.Bottom.Visible = true
-                    objects.TopOutline.Visible = true
-                    objects.LeftOutline.Visible = true
-                    objects.RightOutline.Visible = true
-                    objects.BottomOutline.Visible = true
-                else
-                    objects.Top.Visible = false
-                    objects.Left.Visible = false
-                    objects.Right.Visible = false
-                    objects.Bottom.Visible = false
-                    objects.TopOutline.Visible = false
-                    objects.LeftOutline.Visible = false
-                    objects.RightOutline.Visible = false
-                    objects.BottomOutline.Visible = false
-                end
-
-                if ESP.Settings.HealthBars then
-                    local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                    local barX = minX - 5
-                    local barHeight = maxY - minY
-                    local healthHeight = barHeight * healthPercent
-
-                    objects.HealthBg.From = Vector2.new(barX, minY)
-                    objects.HealthBg.To = Vector2.new(barX, maxY)
-                    objects.HealthBg.Visible = true
-
-                    objects.HealthFill.From = Vector2.new(barX, maxY)
-                    objects.HealthFill.To = Vector2.new(barX, maxY - healthHeight)
-                    objects.HealthFill.Color = Color3.fromRGB(255 - (healthPercent * 255), healthPercent * 255, 0)
-                    objects.HealthFill.Visible = true
-                else
-                    objects.HealthBg.Visible = false
-                    objects.HealthFill.Visible = false
-                end
-
-                if ESP.Settings.Skeletons then
-                    local connections = (hum.RigType == Enum.HumanoidRigType.R15) and R15Connections or R6Connections
-                    for i, pair in ipairs(connections) do
-                        local partA, partB = char:FindFirstChild(pair[1]), char:FindFirstChild(pair[2])
-                        local line = objects.Skeleton[i]
-
-                        if partA and partB and line then
-                            local posA, visA = Camera:WorldToViewportPoint(partA.Position)
-                            local posB, visB = Camera:WorldToViewportPoint(partB.Position)
-                            if visA and visB then
-                                line.From = Vector2.new(posA.X, posA.Y)
-                                line.To = Vector2.new(posB.X, posB.Y)
-                                line.Color = ESP.Settings.SkeletonColor
-                                line.Visible = true
-                            else
-                                line.Visible = false
-                            end
-                        elseif line then
+                    if partA and partB and line then
+                        local posA, visA = Camera:WorldToViewportPoint(partA.Position)
+                        local posB, visB = Camera:WorldToViewportPoint(partB.Position)
+                        if visA and visB then
+                            line.From = Vector2.new(posA.X, posA.Y)
+                            line.To = Vector2.new(posB.X, posB.Y)
+                            line.Color = ESP.Settings.SkeletonColor
+                            line.Visible = true
+                        else
                             line.Visible = false
                         end
-                    end
-                    for i = #connections + 1, #objects.Skeleton do
-                        objects.Skeleton[i].Visible = false
-                    end
-                else
-                    for _, line in ipairs(objects.Skeleton) do
+                    elseif line then
                         line.Visible = false
                     end
                 end
+                for i = #connections + 1, #objects.Skeleton do
+                    objects.Skeleton[i].Visible = false
+                end
+            else
+                for _, line in ipairs(objects.Skeleton) do
+                    line.Visible = false
+                end
+            end
 
-                if ESP.Settings.HeadDots then
-                    local headPart = char:FindFirstChild("Head")
-                    local torsoPart = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+            if ESP.Settings.HeadDots then
+                local headPart = char:FindFirstChild("Head")
+                local torsoPart = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
 
-                    if headPart then
-                        local headPos, headVis = Camera:WorldToViewportPoint(headPart.Position)
-                        local topHeadPos = Camera:WorldToViewportPoint(headPart.Position + Vector3.new(0, headPart.Size.Y / 2, 0))
-                        
-                        if headVis then
-                            objects.HeadDot.Position = Vector2.new(headPos.X, headPos.Y)
-                            objects.HeadDot.Radius = math.max(math.abs(headPos.Y - topHeadPos.Y), 2)
-                            objects.HeadDot.Color = ESP.Settings.HeadDotColor
-                            objects.HeadDot.Visible = true
+                if headPart then
+                    local headPos, headVis = Camera:WorldToViewportPoint(headPart.Position)
+                    local topHeadPos = Camera:WorldToViewportPoint(headPart.Position + Vector3.new(0, headPart.Size.Y / 2, 0))
+                    
+                    if headVis then
+                        objects.HeadDot.Position = Vector2.new(headPos.X, headPos.Y)
+                        objects.HeadDot.Radius = math.max(math.abs(headPos.Y - topHeadPos.Y), 2)
+                        objects.HeadDot.Color = ESP.Settings.HeadDotColor
+                        objects.HeadDot.Visible = true
 
-                            if torsoPart then
-                                local torsoPos, torsoVis = Camera:WorldToViewportPoint(torsoPart.Position)
-                                if torsoVis then
-                                    objects.HeadLine.From = Vector2.new(headPos.X, headPos.Y)
-                                    objects.HeadLine.To = Vector2.new(torsoPos.X, torsoPos.Y)
-                                    objects.HeadLine.Color = ESP.Settings.HeadDotColor
-                                    objects.HeadLine.Visible = true
-                                else
-                                    objects.HeadLine.Visible = false
-                                end
+                        if torsoPart then
+                            local torsoPos, torsoVis = Camera:WorldToViewportPoint(torsoPart.Position)
+                            if torsoVis then
+                                objects.HeadLine.From = Vector2.new(headPos.X, headPos.Y)
+                                objects.HeadLine.To = Vector2.new(torsoPos.X, torsoPos.Y)
+                                objects.HeadLine.Color = ESP.Settings.HeadDotColor
+                                objects.HeadLine.Visible = true
                             else
                                 objects.HeadLine.Visible = false
                             end
                         else
-                            objects.HeadDot.Visible = false
                             objects.HeadLine.Visible = false
                         end
                     else
@@ -494,42 +491,33 @@ local function createPlayerESP(targetPlayer)
                     objects.HeadDot.Visible = false
                     objects.HeadLine.Visible = false
                 end
-                return
+            else
+                objects.HeadDot.Visible = false
+                objects.HeadLine.Visible = false
             end
+            return
         end
+    end
 
-        hidePlayerESP(objects)
-        if char then
-            destroyAllChams(char)
-        end
-    end)
-
-    ActiveESP[targetPlayer] = {
-        Objects = objects,
-        Connection = renderConn
-    }
+    hidePlayerESP(objects)
+    if char then
+        destroyAllChams(char)
+    end
 end
 
 local function removePlayerESP(targetPlayer)
     if ActiveESP[targetPlayer] then
-        local entry = ActiveESP[targetPlayer]
+        local objects = ActiveESP[targetPlayer]
         
-        if entry.Connection then 
-            entry.Connection:Disconnect() 
-            entry.Connection = nil
-        end
+        hidePlayerESP(objects)
         
-        if entry.Objects then
-            hidePlayerESP(entry.Objects)
-            
-            for _, v in pairs(entry.Objects) do
-                if type(v) == "table" then
-                    for _, line in ipairs(v) do 
-                        line:Remove() 
-                    end
-                else
-                    v:Remove()
+        for k, v in pairs(objects) do
+            if type(v) == "table" then
+                for _, line in ipairs(v) do 
+                    line:Remove() 
                 end
+            elseif k ~= "LastUpdate" and type(v) == "userdata" and v.Remove then
+                v:Remove()
             end
         end
 
@@ -569,6 +557,20 @@ function ESP:Init()
     
     table.insert(Connections, Players.PlayerAdded:Connect(createPlayerESP))
     table.insert(Connections, Players.PlayerRemoving:Connect(removePlayerESP))
+
+    local globalRenderConn = RunService.RenderStepped:Connect(function()
+        if not ESP.Settings.Enabled then
+            for _, objects in pairs(ActiveESP) do
+                hidePlayerESP(objects)
+            end
+            return
+        end
+
+        for targetPlayer, objects in pairs(ActiveESP) do
+            updatePlayerESP(targetPlayer, objects)
+        end
+    end)
+    table.insert(Connections, globalRenderConn)
 end
 
 return ESP
