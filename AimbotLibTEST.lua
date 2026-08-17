@@ -222,10 +222,26 @@ function Aimbot:Init()
         end
     end)
 
+    local function isMatchingBind(input, bind)
+        if not bind then return false end
+        
+        -- Check KeyCode (for keyboard buttons like E, Shift, Q)
+        if input.KeyCode == bind then
+            return true
+        end
+        
+        -- Check UserInputType (for mouse buttons like MouseButton1, MouseButton2)
+        if input.UserInputType == bind then
+            return true
+        end
+        
+        return false
+    end
+
     inputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed or not self.Config.enabled then return end
-
-        if input.KeyCode == self.Config.keybind then
+    
+        if isMatchingBind(input, self.Config.keybind) then
             if self.Config.triggerMode == "Hold" then
                 self:Toggle(true)
             else
@@ -233,16 +249,15 @@ function Aimbot:Init()
             end
         end
     end)
-
+    
     inputEndedConnection = UserInputService.InputEnded:Connect(function(input, gameProcessed)
         if gameProcessed or not self.Config.enabled then return end
-
-        if input.KeyCode == self.Config.keybind then
+    
+        if isMatchingBind(input, self.Config.keybind) then
             if self.Config.triggerMode == "Hold" then
                 self:Toggle(false)
             end
         end
-    end)
 end
 
 function Aimbot:Destroy()
