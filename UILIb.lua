@@ -62,7 +62,6 @@ function Library:SaveConfig(fileName)
 		dataToSave[flag] = SerializeValue(value)
 	end
 
-	-- Save Window Size if window exists
 	if Library.ActiveWindow and Library.ActiveWindow.MainFrame then
 		local size = Library.ActiveWindow.MainFrame.AbsoluteSize
 		dataToSave["__WindowSize"] = { Width = size.X, Height = size.Y }
@@ -110,8 +109,6 @@ end
 
 function Library:GetConfigs()
 	local configs = {}
-	
-	-- Check if the executor supports directory listing
 	if not listfiles then
 		warn("[Library Config]: Your executor does not support 'listfiles'.")
 		return configs
@@ -119,7 +116,6 @@ function Library:GetConfigs()
 
 	local files = listfiles("") or {}
 	for _, path in ipairs(files) do
-		-- Handle different path formats returned by various executors
 		local fileName = path:match("([^/\\]+)%.json$")
 		if fileName then
 			table.insert(configs, fileName)
@@ -132,7 +128,6 @@ end
 function Library:RefreshConfigs(targetDropdown, callback)
 	local configs = Library:GetConfigs()
 	
-	-- Update a target dropdown element if passed
 	if targetDropdown then
 		if typeof(targetDropdown) == "string" and Library.Elements[targetDropdown] then
 			targetDropdown = Library.Elements[targetDropdown]
@@ -145,7 +140,6 @@ function Library:RefreshConfigs(targetDropdown, callback)
 		end
 	end
 
-	-- Execute an optional callback returning the fetched configuration list
 	if type(callback) == "function" then
 		callback(configs)
 	end
@@ -160,9 +154,6 @@ function Library:DeleteConfig(fileName)
 		delfile(path)
 	end
 end
-
-
-
 
 --------------------------------------------------------------------------------
 -- THEME & INPUT SYSTEM
@@ -201,11 +192,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
-
-
-
 --------------------------------------------------------------------------------
--- SCREEN GUI CONTAINER (Move above Notify so it exists in scope)
+-- SCREEN GUI CONTAINER
 --------------------------------------------------------------------------------
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -214,7 +202,6 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 999999999
 ScreenGui.IgnoreGuiInset = true
 
--- Protect parent assignment if running before PlayerGui loads
 pcall(function()
 	ScreenGui.Parent = PlayerGui
 end)
@@ -246,7 +233,6 @@ function Library:Notify(options)
 	FrameCorner.CornerRadius = UDim.new(0, 6)
 	FrameCorner.Parent = NotifyFrame
 
-	-- Title Bar
 	local TitleBar = Instance.new("Frame")
 	TitleBar.Size = UDim2.new(1, 0, 0, 28)
 	RegisterTheme(TitleBar, "BackgroundColor3", "Background")
@@ -289,7 +275,6 @@ function Library:Notify(options)
 
 	CloseBtn.MouseButton1Click:Connect(CloseWindow)
 
-	-- Message Text
 	local MessageLabel = Instance.new("TextLabel")
 	MessageLabel.Size = UDim2.new(1, -20, 0, 35)
 	MessageLabel.Position = UDim2.new(0, 10, 0, 34)
@@ -302,7 +287,6 @@ function Library:Notify(options)
 	MessageLabel.ZIndex = 201
 	MessageLabel.Parent = NotifyFrame
 
-	-- Action Buttons
 	if options.YesNo then
 		local YesBtn = Instance.new("TextButton")
 		YesBtn.Size = UDim2.new(0.45, 0, 0, 26)
@@ -362,14 +346,12 @@ function Library:Notify(options)
 		OkBtn.MouseButton1Click:Connect(CloseWindow)
 	end
 
-	-- Auto Close Timer
 	if duration > 0 then
 		task.delay(duration, function()
 			CloseWindow()
 		end)
 	end
 end
-
 
 --------------------------------------------------------------------------------
 -- WINDOW CREATION
@@ -443,7 +425,6 @@ function Library:CreateWindow(titleText)
 		self.windowVisible = MainFrame.Visible
 	
 		if not self.windowVisible then
-			-- Close active colorpicker when menu is toggled off
 			if Library.ActiveColorpicker then
 				Library.ActiveColorpicker:Destroy()
 				Library.ActiveColorpicker = nil
@@ -462,15 +443,9 @@ function Library:CreateWindow(titleText)
 		end
 	end
 
-	RunService.RenderStepped:Connect(function()
-		if Window.windowVisible then
-			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-			UserInputService.MouseIconEnabled = true
-		end
-	end)
+	-- [Optimization]: Removed the RunService.RenderStepped polling loop here. 
+	-- Mouse behavior states are now applied directly inside Window:Toggle().
 
-	
-	
 	local Title = Instance.new("TextLabel")
 	Title.Size = UDim2.new(1, -20, 0, 35)
 	Title.Position = UDim2.new(0, 10, 0, 0)
@@ -562,7 +537,6 @@ function Library:CreateWindow(titleText)
 		local targetWidth = math.max(requiredWidthForTabs, requiredWidthForContent, Window.BaseWidth)
 		local targetHeight = math.max((contentHeight or 0) + 101, Window.BaseHeight)
 
-		-- Update size without resetting MainFrame.Position
 		MainFrame.Size = UDim2.new(0, targetWidth, 0, targetHeight)
 	end
 
@@ -661,7 +635,6 @@ function Library:CreateWindow(titleText)
 		    local toggled = defaultState or false
 		    Library.Flags[flag] = toggled
 		
-		    -- Main container holding both the toggle bar and any expanded sub-elements
 		    local ContainerFrame = Instance.new("Frame")
 		    ContainerFrame.Name = text .. "_ToggleContainer"
 		    ContainerFrame.Size = UDim2.new(1, 0, 0, 32)
@@ -673,7 +646,6 @@ function Library:CreateWindow(titleText)
 		    ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		    ContainerLayout.Parent = ContainerFrame
 		
-		    -- Toggle Bar
 		    local ToggleFrame = Instance.new("Frame")
 		    ToggleFrame.Name = "ToggleFrame"
 		    ToggleFrame.Size = UDim2.new(1, 0, 0, 32)
@@ -709,7 +681,6 @@ function Library:CreateWindow(titleText)
 		    ClickArea.Text = ""
 		    ClickArea.Parent = ToggleFrame
 		
-		    -- Container for child elements (Hidden by default unless toggled is true)
 		    local ChildrenHolder = Instance.new("Frame")
 		    ChildrenHolder.Name = "ChildrenHolder"
 		    ChildrenHolder.Size = UDim2.new(1, 0, 0, 0)
@@ -722,7 +693,6 @@ function Library:CreateWindow(titleText)
 		    ChildrenLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		    ChildrenLayout.Parent = ChildrenHolder
 		
-		    -- Automatically resize ChildrenHolder & ContainerFrame based on contents
 		    ChildrenLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 		        local height = ChildrenLayout.AbsoluteContentSize.Y
 		        ChildrenHolder.Size = UDim2.new(1, 0, 0, height)
@@ -755,7 +725,6 @@ function Library:CreateWindow(titleText)
 		        SetState(not toggled)
 		    end)
 		
-		    -- Create element component builder bound to ChildrenHolder
 		    local ToggleObj = CreateComponents(ChildrenHolder)
 		
 		    function ToggleObj:Set(val)
@@ -765,6 +734,7 @@ function Library:CreateWindow(titleText)
 		    Library.Elements[flag] = ToggleObj
 		    return ToggleObj
 		end
+
 		function Comp:AddKeybind(text, defaultKey, flag, callback)
 			if type(flag) == "function" then
 				callback = flag
@@ -984,7 +954,6 @@ function Library:CreateWindow(titleText)
 		    Library.Flags[flag] = selected
 		    local open = false
 		
-		    -- Outer container wrapping the dropdown frame and option sub-elements
 		    local ContainerFrame = Instance.new("Frame")
 		    ContainerFrame.Name = text .. "_DropdownContainer"
 		    ContainerFrame.Size = UDim2.new(1, 0, 0, 32)
@@ -996,7 +965,6 @@ function Library:CreateWindow(titleText)
 		    ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		    ContainerLayout.Parent = ContainerFrame
 		
-		    -- Dropdown Main Bar
 		    local DropdownFrame = Instance.new("Frame")
 		    DropdownFrame.Name = "DropdownFrame"
 		    DropdownFrame.Size = UDim2.new(1, 0, 0, 32)
@@ -1050,7 +1018,6 @@ function Library:CreateWindow(titleText)
 		    local OptionComponents = {}
 		    local DropdownObj = {}
 		
-		    -- Function to adjust ContainerFrame size when the dropdown state changes
 		    local function UpdateContainerHeight()
 		        local currentSub = SubHolders[selected]
 		        local subHeight = 0
@@ -1200,7 +1167,8 @@ function Library:CreateWindow(titleText)
 		    Library.Elements[flag] = DropdownObj
 		    return DropdownObj
 		end
-	function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
+
+		function Comp:AddColorpicker(text, defaultColor, useAlpha, defaultAlpha, flag, callback)
 			if type(useAlpha) == "function" then
 				callback = useAlpha
 				flag = text
@@ -1385,7 +1353,6 @@ function Library:CreateWindow(titleText)
 				PickerHolder.ZIndex = 101
 				PickerHolder.Parent = Window
 
-				-- Base canvas displays pure Hue color (h, 1, 1)
 				local SVCanvas = Instance.new("TextButton")
 				SVCanvas.Size = UDim2.new(0, 130, 0, 120)
 				SVCanvas.Position = UDim2.new(0, 0, 0, 0)
@@ -1399,7 +1366,6 @@ function Library:CreateWindow(titleText)
 				SVCorner.CornerRadius = UDim.new(0, 3)
 				SVCorner.Parent = SVCanvas
 
-				-- Layer 1: Horizontal Saturation Overlay (White at left -> Transparent at right)
 				local SaturationOverlay = Instance.new("Frame")
 				SaturationOverlay.Size = UDim2.new(1, 0, 1, 0)
 				SaturationOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -1415,12 +1381,11 @@ function Library:CreateWindow(titleText)
 				local SaturationGradient = Instance.new("UIGradient")
 				SaturationGradient.Rotation = 0
 				SaturationGradient.Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 0), -- White
-					NumberSequenceKeypoint.new(1, 1)  -- Transparent (shows base Hue)
+					NumberSequenceKeypoint.new(0, 0),
+					NumberSequenceKeypoint.new(1, 1)
 				})
 				SaturationGradient.Parent = SaturationOverlay
 
-				-- Layer 2: Vertical Value Overlay (Transparent at top -> Opaque Black at bottom)
 				local ValueOverlay = Instance.new("Frame")
 				ValueOverlay.Size = UDim2.new(1, 0, 1, 0)
 				ValueOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -1436,8 +1401,8 @@ function Library:CreateWindow(titleText)
 				local ValueGradient = Instance.new("UIGradient")
 				ValueGradient.Rotation = 90
 				ValueGradient.Transparency = NumberSequence.new({
-					NumberSequenceKeypoint.new(0, 1), -- Transparent (shows Saturation/Hue)
-					NumberSequenceKeypoint.new(1, 0)  -- Solid Black at bottom edge
+					NumberSequenceKeypoint.new(0, 1),
+					NumberSequenceKeypoint.new(1, 0)
 				})
 				ValueGradient.Parent = ValueOverlay
 
@@ -1883,7 +1848,6 @@ function Library:CreateWindow(titleText)
 		MainScroll.ScrollBarThickness = 4
 		MainScroll.Parent = PageFrame
 
-		-- Container setup for 2 distinct fixed-width columns
 		local ColumnHolder = Instance.new("Frame")
 		ColumnHolder.Name = "ColumnHolder"
 		ColumnHolder.Size = UDim2.new(1, 0, 1, 0)
@@ -1896,7 +1860,6 @@ function Library:CreateWindow(titleText)
 		HolderLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		HolderLayout.Parent = ColumnHolder
 
-		-- FIXED WIDTH LEFT COLUMN (200px)
 		local LeftColumn = Instance.new("Frame")
 		LeftColumn.Name = "LeftColumn"
 		LeftColumn.Size = UDim2.new(0, 200, 0, 0)
@@ -1908,7 +1871,6 @@ function Library:CreateWindow(titleText)
 		LeftLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		LeftLayout.Parent = LeftColumn
 
-		-- FIXED WIDTH RIGHT COLUMN (200px)
 		local RightColumn = Instance.new("Frame")
 		RightColumn.Name = "RightColumn"
 		RightColumn.Size = UDim2.new(0, 200, 0, 0)
@@ -1920,7 +1882,6 @@ function Library:CreateWindow(titleText)
 		RightLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		RightLayout.Parent = RightColumn
 
-		-- Update scroll canvas vertically and dynamically recalculate bounds
 		local function UpdateCanvas()
 			local leftH = LeftLayout.AbsoluteContentSize.Y
 			local rightH = RightLayout.AbsoluteContentSize.Y
