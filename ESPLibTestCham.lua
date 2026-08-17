@@ -81,6 +81,21 @@ local raycastParams = RaycastParams.new()
 raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 raycastParams.IgnoreWater = true
 
+-- Helper function to determine if a target player passes TeamCheck
+local function passesTeamCheck(targetPlayer)
+    if not ESP.Settings.TeamCheck then
+        return true
+    end
+
+    -- If either player lacks a Team assignment, default to allowing ESP (or neutral)
+    if not LocalPlayer.Team or not targetPlayer.Team then
+        return true
+    end
+
+    -- Render only if player is on an opposing team
+    return targetPlayer.Team ~= LocalPlayer.Team
+end
+
 local function isCharacterVisible(targetCharacter)
     if not Camera or not LocalPlayer.Character then return false end
     local rootPart = targetCharacter:FindFirstChild("HumanoidRootPart")
@@ -201,7 +216,8 @@ end
 local chamsUpdateTick = {}
 
 local function updateChams(targetPlayer, char)
-    if not ESP.Settings.Chams then
+    -- Check if Chams setting is disabled or if TeamCheck fails
+    if not ESP.Settings.Chams or not passesTeamCheck(targetPlayer) then
         destroyAllChams(char)
         return
     end
@@ -315,8 +331,7 @@ local function updatePlayerESP(targetPlayer, objects)
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
-    local teamCheckPassed = not ESP.Settings.TeamCheck or (targetPlayer.Team ~= LocalPlayer.Team)
-    local canRender = ESP.Settings.Enabled and teamCheckPassed and char and hrp and hum and hum.Health > 0
+    local canRender = ESP.Settings.Enabled and passesTeamCheck(targetPlayer) and char and hrp and hum and hum.Health > 0
 
     if canRender then
         updateChams(targetPlayer, char)
