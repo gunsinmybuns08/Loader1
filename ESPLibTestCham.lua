@@ -211,7 +211,15 @@ local function updateChams(targetPlayer, char)
         return
     end
     chamsUpdateTick[targetPlayer] = now
-
+    for _, char in ipairs(workspace:GetChildren()) do
+        local cache = AdornmentCache[char]
+        if cache and cache.GlowBoxes then
+            for _, glowBox in ipairs(cache.GlowBoxes) do
+                -- Dynamically apply the transparency every frame
+                glowBox.Transparency = ESP.Settings.Chams.Adornment.Glow_Base_Transparency
+            end
+        end
+    end
     local visible = true
     if not ESP.Settings.Occluded_Chams then
         visible = isCharacterVisible(char)
