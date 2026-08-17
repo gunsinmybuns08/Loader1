@@ -258,6 +258,7 @@ function Aimbot:Init()
                 self:Toggle(false)
             end
         end
+    end)
 end
 
 function Aimbot:Destroy()
