@@ -10,7 +10,7 @@ local Camera = Workspace.CurrentCamera
 -- Combined Settings
 ESP.Settings = {
     -- Drawing ESP Toggle Controls
-    Enabled = true,
+    Enabled = false,
     TeamCheck = false,
     Boxes = true,
     Names = true,
