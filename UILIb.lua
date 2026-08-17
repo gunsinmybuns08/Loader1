@@ -624,6 +624,32 @@ function Library:CreateWindow(titleText)
 			Button.MouseButton1Click:Connect(callback)
 		end
 
+		function Comp:AddLabel(text)
+			local LabelFrame = Instance.new("Frame")
+			LabelFrame.Size = UDim2.new(1, 0, 0, 24)
+			LabelFrame.BackgroundTransparency = 1
+			LabelFrame.Parent = TargetContainer
+
+			local Label = Instance.new("TextLabel")
+			Label.Size = UDim2.new(1, -10, 1, 0)
+			Label.Position = UDim2.new(0, 5, 0, 0)
+			Label.BackgroundTransparency = 1
+			Label.Text = text
+			RegisterTheme(Label, "TextColor3", "MutedText")
+			Label.TextSize = 12
+			Label.Font = Enum.Font.SourceSans
+			Label.TextXAlignment = Enum.TextXAlignment.Left
+			Label.TextWrapped = true
+			Label.Parent = LabelFrame
+
+			local LabelObj = {}
+			function LabelObj:Set(newText)
+				Label.Text = newText
+			end
+
+			return LabelObj
+		end
+
 		function Comp:AddToggle(text, defaultState, flag, callback)
 		    if type(flag) == "function" then
 		        callback = flag
@@ -735,31 +761,6 @@ function Library:CreateWindow(titleText)
 		    return ToggleObj
 		end
 		
-		function Comp:AddLabel(text)
-			local LabelFrame = Instance.new("Frame")
-			LabelFrame.Size = UDim2.new(1, 0, 0, 24)
-			LabelFrame.BackgroundTransparency = 1
-			LabelFrame.Parent = TargetContainer
-
-			local Label = Instance.new("TextLabel")
-			Label.Size = UDim2.new(1, -10, 1, 0)
-			Label.Position = UDim2.new(0, 5, 0, 0)
-			Label.BackgroundTransparency = 1
-			Label.Text = text
-			RegisterTheme(Label, "TextColor3", "MutedText")
-			Label.TextSize = 12
-			Label.Font = Enum.Font.SourceSans
-			Label.TextXAlignment = Enum.TextXAlignment.Left
-			Label.TextWrapped = true
-			Label.Parent = LabelFrame
-
-			local LabelObj = {}
-			function LabelObj:Set(newText)
-				Label.Text = newText
-			end
-
-			return LabelObj
-		end
 
 		function Comp:AddKeybind(text, defaultKey, flag, callback)
 			if type(flag) == "function" then
