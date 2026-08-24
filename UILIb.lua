@@ -718,6 +718,10 @@ function Library:CreateWindow(titleText)
 			ClickArea.BackgroundTransparency = 1
 			ClickArea.Text = ""
 			ClickArea.Parent = ToggleFrame
+
+			local clickCorner = Instance.new("UICorner")
+			clickCorner.CornerRadius = UDim.new(1, 0)
+			clickCorner.Parent = ClickArea
 		
 			local function SetState(state)
 				toggled = state
