@@ -11,14 +11,16 @@ local Library = {}
 Library.Flags = {}
 Library.Elements = {}
 Library.Theme = {
-	Background = Color3.fromRGB(30, 30, 35),
-	Container = Color3.fromRGB(40, 40, 45),
-	ContentBackground = Color3.fromRGB(24, 24, 28),
-	Separator = Color3.fromRGB(55, 55, 62),
-	Accent = Color3.fromRGB(0, 162, 255),
-	Text = Color3.fromRGB(245, 245, 245),
-	MutedText = Color3.fromRGB(150, 150, 150),
-	font = "Code"
+	Background = Color3.fromRGB(20, 20, 25),
+	Container = Color3.fromRGB(28, 28, 34),
+	ContentBackground = Color3.fromRGB(16, 16, 20),
+	Separator = Color3.fromRGB(45, 45, 52),
+	Border = Color3.fromRGB(50, 50, 60),
+	Accent = Color3.fromRGB(0, 140, 255),
+	Text = Color3.fromRGB(240, 240, 245),
+	MutedText = Color3.fromRGB(140, 140, 150),
+	Font = Enum.Font.GothamMedium,
+	FontBold = Enum.Font.GothamBold
 }
 
 Library.Keybinds = {}
@@ -660,114 +662,92 @@ function Library:CreateWindow(titleText)
 		end
 
 		function Comp:AddToggle(text, defaultState, flag, callback)
-		    if type(flag) == "function" then
-		        callback = flag
-		        flag = text
-		    end
-		    callback = callback or function() end
-		    flag = flag or text
+			if type(flag) == "function" then
+				callback = flag
+				flag = text
+			end
+			callback = callback or function() end
+			flag = flag or text
 		
-		    local toggled = defaultState or false
-		    Library.Flags[flag] = toggled
+			local toggled = defaultState or false
+			Library.Flags[flag] = toggled
 		
-		    local ContainerFrame = Instance.new("Frame")
-		    ContainerFrame.Name = text .. "_ToggleContainer"
-		    ContainerFrame.Size = UDim2.new(1, 0, 0, 32)
-		    ContainerFrame.BackgroundTransparency = 1
-		    ContainerFrame.Parent = TargetContainer
+			local ToggleFrame = Instance.new("Frame")
+			ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
+			RegisterTheme(ToggleFrame, "BackgroundColor3", "Container")
+			ToggleFrame.Parent = TargetContainer
 		
-		    local ContainerLayout = Instance.new("UIListLayout")
-		    ContainerLayout.Padding = UDim.new(0, 6)
-		    ContainerLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		    ContainerLayout.Parent = ContainerFrame
+			local ToggleCorner = Instance.new("UICorner")
+			ToggleCorner.CornerRadius = UDim.new(0, 6)
+			ToggleCorner.Parent = ToggleFrame
 		
-		    local ToggleFrame = Instance.new("Frame")
-		    ToggleFrame.Name = "ToggleFrame"
-		    ToggleFrame.Size = UDim2.new(1, 0, 0, 32)
-		    RegisterTheme(ToggleFrame, "BackgroundColor3", "Container")
-		    ToggleFrame.Transparency = 0
-		    ToggleFrame.Parent = ContainerFrame
+			local Label = Instance.new("TextLabel")
+			Label.Size = UDim2.new(1, -60, 1, 0)
+			Label.Position = UDim2.new(0, 12, 0, 0)
+			Label.BackgroundTransparency = 1
+			Label.Text = text
+			RegisterTheme(Label, "TextColor3", "Text")
+			Label.TextSize = 13
+			Label.Font = Library.Theme.Font
+			Label.TextXAlignment = Enum.TextXAlignment.Left
+			Label.Parent = ToggleFrame
 		
-		    local ToggleCorner = Instance.new("UICorner")
-		    ToggleCorner.CornerRadius = UDim.new(0, 5)
-		    ToggleCorner.Parent = ToggleFrame
+			-- Pill Switch Design
+			local SwitchTrack = Instance.new("Frame")
+			SwitchTrack.Size = UDim2.new(0, 36, 0, 20)
+			SwitchTrack.Position = UDim2.new(1, -48, 0.5, -10)
+			RegisterTheme(SwitchTrack, "BackgroundColor3", toggled and "Accent" or "Separator")
+			SwitchTrack.Parent = ToggleFrame
 		
-		    local Label = Instance.new("TextLabel")
-		    Label.Size = UDim2.new(1, -50, 1, 0)
-		    Label.Position = UDim2.new(0, 35, 0, 0)
-		    Label.BackgroundTransparency = 1
-		    Label.Text = text
-		    RegisterTheme(Label, "TextColor3", "Text")
-		    Label.TextSize = 13
-		    Label.Font = Enum.Font.SourceSans
-		    Label.TextXAlignment = Enum.TextXAlignment.Left
-		    Label.Parent = ToggleFrame
+			local TrackCorner = Instance.new("UICorner")
+			TrackCorner.CornerRadius = UDim.new(1, 0)
+			TrackCorner.Parent = SwitchTrack
 		
-		    local Indicator = Instance.new("Frame")
-		    Indicator.Size = UDim2.new(0, 15, 0, 15)
-		    Indicator.Position = UDim2.new(0, 10, 0.5, -7)
-		    RegisterTheme(Indicator, "BackgroundColor3", toggled and "Accent" or "Background")
-		    Indicator.BorderSizePixel = 0
-		    Indicator.Parent = ToggleFrame
+			local Knob = Instance.new("Frame")
+			Knob.Size = UDim2.new(0, 16, 0, 16)
+			Knob.Position = toggled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+			Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			Knob.Parent = SwitchTrack
 		
-		    local ClickArea = Instance.new("TextButton")
-		    ClickArea.Size = UDim2.new(1, 0, 1, 0)
-		    ClickArea.BackgroundTransparency = 1
-		    ClickArea.Text = ""
-		    ClickArea.Parent = ToggleFrame
+			local KnobCorner = Instance.new("UICorner")
+			KnobCorner.CornerRadius = UDim.new(1, 0)
+			KnobCorner.Parent = Knob
 		
-		    local ChildrenHolder = Instance.new("Frame")
-		    ChildrenHolder.Name = "ChildrenHolder"
-		    ChildrenHolder.Size = UDim2.new(1, 0, 0, 0)
-		    ChildrenHolder.BackgroundTransparency = 1
-		    ChildrenHolder.Visible = toggled
-		    ChildrenHolder.Parent = ContainerFrame
+			local ClickArea = Instance.new("TextButton")
+			ClickArea.Size = UDim2.new(1, 0, 1, 0)
+			ClickArea.BackgroundTransparency = 1
+			ClickArea.Text = ""
+			ClickArea.Parent = ToggleFrame
 		
-		    local ChildrenLayout = Instance.new("UIListLayout")
-		    ChildrenLayout.Padding = UDim.new(0, 6)
-		    ChildrenLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		    ChildrenLayout.Parent = ChildrenHolder
+			local function SetState(state)
+				toggled = state
+				Library.Flags[flag] = toggled
 		
-		    ChildrenLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		        local height = ChildrenLayout.AbsoluteContentSize.Y
-		        ChildrenHolder.Size = UDim2.new(1, 0, 0, height)
-		        
-		        if toggled then
-		            ContainerFrame.Size = UDim2.new(1, 0, 0, 32 + (height > 0 and (height + 6) or 0))
-		        end
-		    end)
+				local trackColor = toggled and Library.Theme.Accent or Library.Theme.Separator
+				local knobPos = toggled and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
 		
-		    local function SetState(state)
-		        toggled = state
-		        Library.Flags[flag] = toggled
+				TweenService:Create(SwitchTrack, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+					BackgroundColor3 = trackColor
+				}):Play()
 		
-		        local targetColor = toggled and Library.Theme.Accent or Library.Theme.Background
-		        TweenService:Create(Indicator, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
+				TweenService:Create(Knob, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+					Position = knobPos
+				}):Play()
 		
-		        ChildrenHolder.Visible = toggled
+				callback(toggled)
+			end
 		
-		        local childHeight = ChildrenLayout.AbsoluteContentSize.Y
-		        local targetContainerHeight = toggled and (32 + (childHeight > 0 and (childHeight + 6) or 0)) or 32
-		        
-		        TweenService:Create(ContainerFrame, TweenInfo.new(0.2), {
-		            Size = UDim2.new(1, 0, 0, targetContainerHeight)
-		        }):Play()
+			ClickArea.MouseButton1Click:Connect(function()
+				SetState(not toggled)
+			end)
 		
-		        callback(toggled)
-		    end
+			local ToggleObj = {}
+			function ToggleObj:Set(val)
+				SetState(val)
+			end
 		
-		    ClickArea.MouseButton1Click:Connect(function()
-		        SetState(not toggled)
-		    end)
-		
-		    local ToggleObj = CreateComponents(ChildrenHolder)
-		
-		    function ToggleObj:Set(val)
-		        SetState(val)
-		    end
-		
-		    Library.Elements[flag] = ToggleObj
-		    return ToggleObj
+			Library.Elements[flag] = ToggleObj
+			return ToggleObj
 		end
 		
 
@@ -1038,12 +1018,22 @@ function Library:CreateWindow(titleText)
 		    SelectedCorner.CornerRadius = UDim.new(0, 4)
 		    SelectedCorner.Parent = SelectedButton
 		
-		    local OptionsHolder = Instance.new("Frame")
-		    OptionsHolder.Name = "OptionsHolder"
-		    OptionsHolder.Size = UDim2.new(1, -20, 0, 0)
-		    OptionsHolder.Position = UDim2.new(0, 10, 0, 35)
-		    OptionsHolder.BackgroundTransparency = 1
-		    OptionsHolder.Parent = DropdownFrame
+			local OptionsHolder = Instance.new("Frame")
+			OptionsHolder.Name = "OptionsHolder"
+			OptionsHolder.Size = UDim2.new(1, 0, 0, 0)
+			OptionsHolder.Position = UDim2.new(0, 0, 1, 4)
+			OptionsHolder.ClipsDescendants = true
+			OptionsHolder.ZIndex = 50
+			OptionsHolder.Parent = DropdownFrame
+			
+			local OptionsCorner = Instance.new("UICorner")
+			OptionsCorner.CornerRadius = UDim.new(0, 5)
+			OptionsCorner.Parent = OptionsHolder
+			
+			local OptionsStroke = Instance.new("UIStroke")
+			RegisterTheme(OptionsStroke, "Color", "Border")
+			OptionsStroke.Thickness = 1
+			OptionsStroke.Parent = OptionsHolder
 		
 		    local OptionsLayout = Instance.new("UIListLayout")
 		    OptionsLayout.Padding = UDim.new(0, 3)
