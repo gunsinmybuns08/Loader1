@@ -1310,7 +1310,7 @@ function Library:CreateWindow(titleText)
 				if type(newCol) == "table" and newCol.R then
 					newCol = Color3.new(newCol.R, newCol.G, newCol.B)
 				end
-
+rr
 				currentColor = newCol or Color3.fromRGB(255, 255, 255)
 				if newAlpha then currentAlpha = newAlpha end
 				Library.Flags[flag] = currentColor
@@ -1972,7 +1972,7 @@ function Library:CreateWindow(titleText)
 		local LeftColumn = Instance.new("Frame")
 		LeftColumn.Name = "LeftColumn"
 		LeftColumn.Size = UDim2.new(0, 204, 0, 0)
-		LeftColumn.Position = UDim2.new(0, 1, 0, 1)
+
 		LeftColumn.BackgroundTransparency = 1
 		LeftColumn.Parent = ColumnHolder
 
@@ -2114,5 +2114,3 @@ function Library:CreateWindow(titleText)
 	end
 	return Window
 end
-
-return Library
