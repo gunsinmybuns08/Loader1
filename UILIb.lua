@@ -1054,7 +1054,7 @@ function Library:CreateWindow(titleText)
 		    SelectedButton.Size = UDim2.new(0.48, 0, 0, 22)
 		    SelectedButton.Position = UDim2.new(0.5, 0, 0, 5)
 		    RegisterTheme(SelectedButton, "BackgroundColor3", "Background")
-		    SelectedButton.Text = selected .. "  ▾"
+		    SelectedButton.Text = selected .. "  v" -- Fixed unicode arrow to standard ASCII character
 		    RegisterTheme(SelectedButton, "TextColor3", "MutedText")
 		    SelectedButton.TextSize = 11
 		    SelectedButton.Font = Library.Theme.Font
@@ -1074,6 +1074,8 @@ function Library:CreateWindow(titleText)
 			OptionsHolder.Name = "OptionsHolder"
 			OptionsHolder.Size = UDim2.new(1, -20, 0, 0)
 			OptionsHolder.Position = UDim2.new(0, 10, 0, 34)
+			RegisterTheme(OptionsHolder, "BackgroundColor3", "ContentBackground") -- Fixed grey box background
+			OptionsHolder.BorderSizePixel = 0
 			OptionsHolder.ClipsDescendants = true
 			OptionsHolder.ZIndex = 50
 			OptionsHolder.Parent = DropdownFrame
@@ -1116,14 +1118,14 @@ function Library:CreateWindow(titleText)
 		        else
 		            open = not open
 		        end
-		        SelectedButton.Text = selected .. (open and "  ▴" or "  ▾")
+		        SelectedButton.Text = selected .. (open and "  ^" or "  v") -- Fixed unicode arrows
 		        UpdateContainerHeight()
 		    end
 		
 		    local function SetSelected(option)
 		        selected = option or "None"
 		        Library.Flags[flag] = selected
-		        SelectedButton.Text = selected .. (open and "  ▴" or "  ▾")
+		        SelectedButton.Text = selected .. (open and "  ^" or "  v") -- Fixed unicode arrows
 		
 		        for optName, holder in pairs(SubHolders) do
 		            holder.Visible = (optName == selected)
