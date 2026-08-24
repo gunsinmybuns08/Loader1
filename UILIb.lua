@@ -202,7 +202,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CustomUILibrary"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 999999999
-ScreenGui.IgnoreGuiInset = true
+ScreenGui.IgnoreGuiInset = false
 
 pcall(function()
 	ScreenGui.Parent = PlayerGui
@@ -380,7 +380,7 @@ function Library:CreateWindow(titleText)
 	RegisterTheme(MainFrame, "BackgroundColor3", "Background")
 	MainFrame.BorderSizePixel = 0
 	MainFrame.Active = true
-	MainFrame.ClipsDescendants = true
+	MainFrame.ClipsDescendants = false
 	MainFrame.Parent = ScreenGui
 
 	local MainCorner = Instance.new("UICorner")
