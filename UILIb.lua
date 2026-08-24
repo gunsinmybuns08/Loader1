@@ -607,7 +607,7 @@ function Library:CreateWindow(titleText)
 			Button.Text = text
 			RegisterTheme(Button, "TextColor3", "Text")
 			Button.TextSize = 13
-			Button.Font = Library.Theme.font
+			Button.Font = Library.Theme.Font
 			Button.AutoButtonColor = false
 			Button.Parent = TargetContainer
 			
