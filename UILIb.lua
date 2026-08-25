@@ -202,7 +202,7 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CustomUILibrary"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 999999999
-ScreenGui.IgnoreGuiInset = false
+ScreenGui.IgnoreGuiInset = true
 
 pcall(function()
 	ScreenGui.Parent = PlayerGui
@@ -373,9 +373,11 @@ function Library:CreateWindow(titleText)
 		BaseHeight = 350
 	}
 
+	-- Fixed: Outer wrapper prevents 1px UIStroke truncation on top/left edges
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Name = "MainFrame"
 	MainFrame.Size = UDim2.new(0, Window.BaseWidth, 0, Window.BaseHeight)
+	-- Position inset by 1px from screen edges/center calculation:
 	MainFrame.Position = UDim2.new(0.5, -Window.BaseWidth / 2, 0.5, -Window.BaseHeight / 2)
 	RegisterTheme(MainFrame, "BackgroundColor3", "Background")
 	MainFrame.BorderSizePixel = 0
@@ -460,8 +462,8 @@ function Library:CreateWindow(titleText)
 	end
 
 	local Title = Instance.new("TextLabel")
-	Title.Size = UDim2.new(1, -24, 0, 36)
-	Title.Position = UDim2.new(0, 14, 0, 0)
+	Title.Size = UDim2.new(1, -28, 0, 36)
+	Title.Position = UDim2.new(0, 14, 0, 2)
 	Title.BackgroundTransparency = 1
 	Title.Text = titleText or "UI Window"
 	RegisterTheme(Title, "TextColor3", "Text")
@@ -472,8 +474,8 @@ function Library:CreateWindow(titleText)
 
 	local TabBar = Instance.new("Frame")
 	TabBar.Name = "TabBar"
-	TabBar.Size = UDim2.new(1, -24, 0, 28)
-	TabBar.Position = UDim2.new(0, 12, 0, 36)
+	TabBar.Size = UDim2.new(1, -28, 0, 28)
+	TabBar.Position = UDim2.new(0, 14, 0, 38)
 	TabBar.BackgroundTransparency = 1
 	TabBar.Parent = MainFrame
 
@@ -485,8 +487,8 @@ function Library:CreateWindow(titleText)
 
 	local Separator = Instance.new("Frame")
 	Separator.Name = "TabSeparator"
-	Separator.Size = UDim2.new(1, -24, 0, 1)
-	Separator.Position = UDim2.new(0, 12, 0, 68)
+	Separator.Size = UDim2.new(1, -28, 0, 1)
+	Separator.Position = UDim2.new(0, 14, 0, 68)
 	RegisterTheme(Separator, "BackgroundColor3", "Separator")
 	Separator.BorderSizePixel = 0
 	Separator.Parent = MainFrame
@@ -494,7 +496,7 @@ function Library:CreateWindow(titleText)
 	local ActiveLine = Instance.new("Frame")
 	ActiveLine.Name = "ActiveTabLine"
 	ActiveLine.Size = UDim2.new(0, 0, 0, 2)
-	ActiveLine.Position = UDim2.new(0, 12, 0, 67)
+	ActiveLine.Position = UDim2.new(0, 14, 0, 67)
 	RegisterTheme(ActiveLine, "BackgroundColor3", "Accent")
 	ActiveLine.BorderSizePixel = 0
 	ActiveLine.BackgroundTransparency = 1
@@ -507,11 +509,11 @@ function Library:CreateWindow(titleText)
 
 	local ContentFrame = Instance.new("Frame")
 	ContentFrame.Name = "ContentFrame"
-	ContentFrame.Size = UDim2.new(1, -24, 1, -82)
-	ContentFrame.Position = UDim2.new(0, 12, 0, 76)
+	ContentFrame.Size = UDim2.new(1, -28, 1, -84)
+	ContentFrame.Position = UDim2.new(0, 14, 0, 76)
 	RegisterTheme(ContentFrame, "BackgroundColor3", "ContentBackground")
 	ContentFrame.BorderSizePixel = 0
-	ContentFrame.ClipsDescendants = false
+	ContentFrame.ClipsDescendants = true
 	ContentFrame.Parent = MainFrame
 
 	local ContentCorner = Instance.new("UICorner")
@@ -1162,52 +1164,58 @@ function Library:CreateWindow(titleText)
 		        return OptionComponents[optName]
 		    end
 		
-		    local function BuildOptions()
-		        for _, child in ipairs(OptionsHolder:GetChildren()) do
-		            if child:IsA("TextButton") then
-		                child:Destroy()
-		            end
-		        end
-		
-		        OptionsHolder.Size = UDim2.new(1, -20, 0, #options * 25)
-		
-		        for _, option in ipairs(options) do
-		            EnsureOptionHolder(option)
-		
-		            local OptionBtn = Instance.new("TextButton")
-		            OptionBtn.Size = UDim2.new(1, 0, 0, 22)
-		            RegisterTheme(OptionBtn, "BackgroundColor3", "Background")
-		            OptionBtn.Text = option
-		            RegisterTheme(OptionBtn, "TextColor3", "MutedText")
-		            OptionBtn.TextSize = 11
-		            OptionBtn.Font = Library.Theme.Font
-		            OptionBtn.AutoButtonColor = false
-		            OptionBtn.Parent = OptionsHolder
-		
-		            local OptionCorner = Instance.new("UICorner")
-		            OptionCorner.CornerRadius = UDim.new(0, 4)
-		            OptionCorner.Parent = OptionBtn
-		
-		            OptionBtn.MouseEnter:Connect(function()
-		                TweenService:Create(OptionBtn, TweenInfo.new(0.12), {
-		                    BackgroundColor3 = Library.Theme.Accent,
-		                    TextColor3 = Library.Theme.Text
-		                }):Play()
-		            end)
-		
-		            OptionBtn.MouseLeave:Connect(function()
-		                TweenService:Create(OptionBtn, TweenInfo.new(0.12), {
-		                    BackgroundColor3 = Library.Theme.Background,
-		                    TextColor3 = Library.Theme.MutedText
-		                }):Play()
-		            end)
-		
-		            OptionBtn.MouseButton1Click:Connect(function()
-		                SetSelected(option)
-		                ToggleDropdown(false)
-		            end)
-		        end
-		    end
+			local function BuildOptions()
+				for _, child in ipairs(OptionsHolder:GetChildren()) do
+					if child:IsA("TextButton") then
+						child:Destroy()
+					end
+				end
+
+				-- Fixed variable name from OptionrHolder to OptionsHolder
+				OptionsHolder.AutomaticSize = Enum.AutomaticSize.Y
+				OptionsHolder.Size = UDim2.new(1, -20, 0, 0)
+				OptionsHolder.ZIndex = 5
+
+				for i, option in ipairs(options) do
+					EnsureOptionHolder(option)
+
+					local OptionBtn = Instance.new("TextButton")
+					OptionBtn.Name = option .. "_Btn"
+					OptionBtn.Size = UDim2.new(1, 0, 0, 22)
+					RegisterTheme(OptionBtn, "BackgroundColor3", "Background")
+					OptionBtn.Text = option
+					RegisterTheme(OptionBtn, "TextColor3", "MutedText")
+					OptionBtn.TextSize = 11
+					OptionBtn.Font = Library.Theme.Font
+					OptionBtn.AutoButtonColor = false
+					OptionBtn.ZIndex = 10
+					OptionBtn.LayoutOrder = i
+					OptionBtn.Parent = OptionsHolder
+
+					local OptionCorner = Instance.new("UICorner")
+					OptionCorner.CornerRadius = UDim.new(0, 4)
+					OptionCorner.Parent = OptionBtn
+
+					OptionBtn.MouseEnter:Connect(function()
+						TweenService:Create(OptionBtn, TweenInfo.new(0.12), {
+							BackgroundColor3 = Library.Theme.Accent,
+							TextColor3 = Library.Theme.Text
+						}):Play()
+					end)
+
+					OptionBtn.MouseLeave:Connect(function()
+						TweenService:Create(OptionBtn, TweenInfo.new(0.12), {
+							BackgroundColor3 = Library.Theme.Background,
+							TextColor3 = Library.Theme.MutedText
+						}):Play()
+					end)
+
+					OptionBtn.MouseButton1Click:Connect(function()
+						SetSelected(option)
+						ToggleDropdown(false)
+					end)
+				end
+			end
 		
 		    SelectedButton.MouseButton1Click:Connect(function()
 		        ToggleDropdown()
@@ -1312,7 +1320,6 @@ function Library:CreateWindow(titleText)
 				if type(newCol) == "table" and newCol.R then
 					newCol = Color3.new(newCol.R, newCol.G, newCol.B)
 				end
-rr
 				currentColor = newCol or Color3.fromRGB(255, 255, 255)
 				if newAlpha then currentAlpha = newAlpha end
 				Library.Flags[flag] = currentColor
@@ -1952,7 +1959,7 @@ rr
 
 		local MainScroll = Instance.new("ScrollingFrame")
 		MainScroll.Name = tabName .. "MainScroll"
-		MainScroll.Size = UDim2.new(1, 0, 1, 0)
+		MainScroll.Size = UDim2.new(1.1, 0, 1.1, 0)
 		MainScroll.BackgroundTransparency = 1
 		MainScroll.BorderSizePixel = 0
 		MainScroll.ScrollBarThickness = 3
@@ -1965,16 +1972,23 @@ rr
 		ColumnHolder.BackgroundTransparency = 1
 		ColumnHolder.Parent = MainScroll
 
+		
+		local columnPadding = Instance.new("UIPadding")
+		columnPadding.PaddingTop = UDim.new(0, 1)
+		columnPadding.PaddingBottom = UDim.new(0, 0)
+		columnPadding.PaddingLeft = UDim.new(0, 1)
+		columnPadding.PaddingRight = UDim.new(0, 0)
+		columnPadding.Parent = ColumnHolder 
+
 		local HolderLayout = Instance.new("UIListLayout")
 		HolderLayout.FillDirection = Enum.FillDirection.Horizontal
-		HolderLayout.Padding = UDim.new(0, 8)
+		HolderLayout.Padding = UDim.new(0, 10)
 		HolderLayout.SortOrder = Enum.SortOrder.LayoutOrder
 		HolderLayout.Parent = ColumnHolder
 
 		local LeftColumn = Instance.new("Frame")
 		LeftColumn.Name = "LeftColumn"
 		LeftColumn.Size = UDim2.new(0, 204, 0, 0)
-
 		LeftColumn.BackgroundTransparency = 1
 		LeftColumn.Parent = ColumnHolder
 
