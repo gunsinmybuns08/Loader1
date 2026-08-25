@@ -679,102 +679,107 @@ function Library:CreateWindow(titleText)
 			return LabelObj
 		end
 
-		function Comp:AddToggle(text, defaultState, flag, callback)
-			if type(flag) == "function" then
-				callback = flag
-				flag = text
-			end
-			callback = callback or function() end
-			flag = flag or text
-		
-			local toggled = defaultState or false
-			Library.Flags[flag] = toggled
-		
-			local ToggleFrame = Instance.new("Frame")
-			ToggleFrame.Size = UDim2.new(1, 0, 0, 32)
-			RegisterTheme(ToggleFrame, "BackgroundColor3", "Container")
-			ToggleFrame.Parent = TargetContainer
-		
-			local ToggleCorner = Instance.new("UICorner")
-			ToggleCorner.CornerRadius = UDim.new(0, 6)
-			ToggleCorner.Parent = ToggleFrame
-			
-			local ToggleStroke = Instance.new("UIStroke")
-			RegisterTheme(ToggleStroke, "Color", "Border")
-			ToggleStroke.Thickness = 1
-			ToggleStroke.Parent = ToggleFrame
-		
-			local Label = Instance.new("TextLabel")
-			Label.Size = UDim2.new(1, -55, 1, 0)
-			Label.Position = UDim2.new(0, 10, 0, 0)
-			Label.BackgroundTransparency = 1
-			Label.Text = text
-			RegisterTheme(Label, "TextColor3", "Text")
-			Label.TextSize = 12
-			Label.Font = Library.Theme.Font
-			Label.TextXAlignment = Enum.TextXAlignment.Left
-			Label.Parent = ToggleFrame
-		
-			local SwitchTrack = Instance.new("Frame")
-			SwitchTrack.Size = UDim2.new(0, 34, 0, 18)
-			SwitchTrack.Position = UDim2.new(1, -44, 0.5, -9)
-			RegisterTheme(SwitchTrack, "BackgroundColor3", toggled and "Accent" or "Separator")
-			SwitchTrack.Parent = ToggleFrame
-		
-			local TrackCorner = Instance.new("UICorner")
-			TrackCorner.CornerRadius = UDim.new(1, 0)
-			TrackCorner.Parent = SwitchTrack
-		
-			local Knob = Instance.new("Frame")
-			Knob.Size = UDim2.new(0, 14, 0, 14)
-			Knob.Position = toggled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-			Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			Knob.Parent = SwitchTrack
-		
-			local KnobCorner = Instance.new("UICorner")
-			KnobCorner.CornerRadius = UDim.new(1, 0)
-			KnobCorner.Parent = Knob
-		
-			local ClickArea = Instance.new("TextButton")
-			ClickArea.Size = UDim2.new(1, 0, 1, 0)
-			ClickArea.BackgroundTransparency = 1
-			ClickArea.Text = ""
-			ClickArea.Parent = ToggleFrame
+function Comp:AddToggle(text, defaultState, flag, callback)
+    if type(defaultState) == "function" then
+        callback = defaultState
+        flag = text
+        defaultState = false
+    elseif type(flag) == "function" then
+        callback = flag
+        flag = text
+    end
+    callback = callback or function() end
+    flag = flag or text
 
-			local clickCorner = Instance.new("UICorner")
-			clickCorner.CornerRadius = UDim.new(0, 6)
-			clickCorner.Parent = ClickArea
-		
-			local function SetState(state)
-				toggled = state
-				Library.Flags[flag] = toggled
-		
-				local trackColor = toggled and Library.Theme.Accent or Library.Theme.Separator
-				local knobPos = toggled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
-		
-				TweenService:Create(SwitchTrack, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-					BackgroundColor3 = trackColor
-				}):Play()
-		
-				TweenService:Create(Knob, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-					Position = knobPos
-				}):Play()
-		
-				callback(toggled)
-			end
-		
-			ClickArea.MouseButton1Click:Connect(function()
-				SetState(not toggled)
-			end)
-		
-			local ToggleObj = {}
-			function ToggleObj:Set(val)
-				SetState(val)
-			end
-		
-			Library.Elements[flag] = ToggleObj
-			return ToggleObj
-		end
+    local toggled = defaultState or false
+    Library.Flags[flag] = toggled
+
+    local ToggleFrame = Instance.new("Frame")
+    ToggleFrame.Size = UDim2.new(1, 0, 0, 32)
+    RegisterTheme(ToggleFrame, "BackgroundColor3", "Container")
+    ToggleFrame.Parent = TargetContainer
+
+    local ToggleCorner = Instance.new("UICorner")
+    ToggleCorner.CornerRadius = UDim.new(0, 6)
+    ToggleCorner.Parent = ToggleFrame
+    
+    local ToggleStroke = Instance.new("UIStroke")
+    RegisterTheme(ToggleStroke, "Color", "Border")
+    ToggleStroke.Thickness = 1
+    ToggleStroke.Parent = ToggleFrame
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, -55, 1, 0)
+    Label.Position = UDim2.new(0, 10, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    RegisterTheme(Label, "TextColor3", "Text")
+    Label.TextSize = 12
+    Label.Font = Library.Theme.Font
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = ToggleFrame
+
+    local SwitchTrack = Instance.new("Frame")
+    SwitchTrack.Size = UDim2.new(0, 34, 0, 18)
+    SwitchTrack.Position = UDim2.new(1, -44, 0.5, -9)
+    SwitchTrack.Parent = ToggleFrame
+
+    local TrackCorner = Instance.new("UICorner")
+    TrackCorner.CornerRadius = UDim.new(1, 0)
+    TrackCorner.Parent = SwitchTrack
+
+    local Knob = Instance.new("Frame")
+    Knob.Size = UDim2.new(0, 14, 0, 14)
+    Knob.Position = toggled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+    Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Knob.Parent = SwitchTrack
+
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = Knob
+
+    local ClickArea = Instance.new("TextButton")
+    ClickArea.Size = UDim2.new(1, 0, 1, 0)
+    ClickArea.BackgroundTransparency = 1
+    ClickArea.Text = ""
+    ClickArea.Parent = ToggleFrame
+
+    local clickCorner = Instance.new("UICorner")
+    clickCorner.CornerRadius = UDim.new(0, 6)
+    clickCorner.Parent = ClickArea
+
+    local function SetState(state)
+        toggled = state
+        Library.Flags[flag] = toggled
+
+        local targetColor = toggled and Library.Theme.Accent or Library.Theme.Separator
+        local knobPos = toggled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+
+        TweenService:Create(SwitchTrack, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            BackgroundColor3 = targetColor
+        }):Play()
+
+        TweenService:Create(Knob, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Position = knobPos
+        }):Play()
+
+        callback(toggled)
+    end
+
+    SwitchTrack.BackgroundColor3 = toggled and Library.Theme.Accent or Library.Theme.Separator
+
+    ClickArea.MouseButton1Click:Connect(function()
+        SetState(not toggled)
+    end)
+
+    local ToggleObj = {}
+    function ToggleObj:Set(val)
+        SetState(val)
+    end
+
+    Library.Elements[flag] = ToggleObj
+    return ToggleObj
+end
 
 		function Comp:AddKeybind(text, defaultKey, flag, callback)
 			if type(flag) == "function" then
