@@ -115,7 +115,7 @@ end
 
 function Library:CreateTab(name)
     local TabModule = {}
-    
+    local mainFrame = self.Main -- Capture reference to Main
     local tabBtn = Instance.new("TextButton")
     tabBtn.Name = name .. "Tab"
     tabBtn.Parent = self.TabHolder
@@ -602,12 +602,10 @@ function Library:CreateTab(name)
                 Library.ActiveColorPicker:Close()
             end
         
-            -- Reposition using absolute coordinates so UIListLayout ignores it
             local btnPos = previewBtn.AbsolutePosition
-            local guiPos = self.Main.AbsolutePosition
+            local guiPos = mainFrame.AbsolutePosition
         
-            -- Option A: If parented to self.Main, use local offset from Main
-            ColorPicker.Parent = self.Main 
+            ColorPicker.Parent = mainFrame
             ColorPicker.Position = UDim2.new(
                 0, (btnPos.X - guiPos.X), 
                 0, (btnPos.Y - guiPos.Y) + previewBtn.AbsoluteSize.Y + 5
