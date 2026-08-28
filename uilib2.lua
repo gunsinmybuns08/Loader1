@@ -4,6 +4,7 @@ local GuiService = game:GetService("GuiService")
 
 local Library = {}
 Library.__index = Library
+Library.ActiveColorPicker = nil -- Tracks the single open picker
 
 function Library.new(titleText)
     local self = setmetatable({}, Library)
@@ -40,7 +41,6 @@ function Library.new(titleText)
     local function isClickOnInteractiveElement(inputPosition)
         local objects = game.Players.LocalPlayer.PlayerGui:GetGuiObjectsAtPosition(inputPosition.X, inputPosition.Y)
         for _, guiObj in ipairs(objects) do
-            -- Ignore main window frame background so clicking empty window space still drags
             if guiObj ~= self.Main and guiObj:IsDescendantOf(self.Main) then
                 if guiObj:IsA("TextButton") or guiObj:IsA("ImageButton") or guiObj:IsA("TextBox") or guiObj.Name:lower():find("picker") or guiObj.Name:lower():find("slider") or guiObj.Name:lower():find("canvas") then
                     return true
@@ -54,7 +54,6 @@ function Library.new(titleText)
     local dragging, dragStart, startPos
     self.Main.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            -- Block drag entirely if the click hit any button, slider, or color picker canvas
             if isClickOnInteractiveElement(input.Position) then 
                 return 
             end
@@ -132,7 +131,6 @@ function Library:CreateTab(name)
     tabCorner.Parent = tabBtn
     tabCorner.BottomLeftRadius = UDim.new(0, 0)
     tabCorner.BottomRightRadius = UDim.new(0, 0)
-
 
     local page = Instance.new("ScrollingFrame")
     page.Name = name .. "Page"
@@ -358,7 +356,6 @@ function Library:CreateTab(name)
         dropFrame.Parent = page
         dropFrame.BackgroundTransparency = 1
         dropFrame.Size = UDim2.new(0, 370, 0, 25)
-        dropFrame.ClipsDescendants = false
         dropFrame.ZIndex = 3
 
         local title = Instance.new("TextLabel")
@@ -382,17 +379,16 @@ function Library:CreateTab(name)
         displayBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         displayBtn.TextSize = 12
         displayBtn.AutoButtonColor = false
-        displayBtn.ZIndex = 4
 
         local dropContent = Instance.new("Frame")
         dropContent.Name = "DropContent"
         dropContent.Parent = dropFrame
         dropContent.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
         dropContent.BorderColor3 = Color3.fromRGB(255, 92, 92)
-        dropContent.Position = UDim2.new(0.271, 0, 0, 23)
+        dropContent.Position = UDim2.new(0.271, 0, 0.88, 0)
         dropContent.Size = UDim2.new(0, 180, 0, 0)
         dropContent.Visible = false
-        dropContent.ZIndex = 10
+        dropContent.ZIndex = 4
 
         local dropLayout = Instance.new("UIListLayout")
         dropLayout.Parent = dropContent
@@ -406,7 +402,6 @@ function Library:CreateTab(name)
         local function toggleDrop()
             open = not open
             dropContent.Visible = open
-            dropFrame.ZIndex = open and 15 or 3
             local currentVal = displayBtn.Text:gsub(" %-", ""):gsub(" %+", "")
             displayBtn.Text = currentVal .. (open and " -" or " +")
         end
@@ -424,7 +419,7 @@ function Library:CreateTab(name)
             optBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             optBtn.TextSize = 12
             optBtn.AutoButtonColor = false
-            optBtn.ZIndex = 11
+            optBtn.ZIndex = 5
 
             table.insert(optionBtns, optBtn)
 
@@ -434,7 +429,8 @@ function Library:CreateTab(name)
                 end
                 optBtn.BackgroundColor3 = Color3.fromRGB(255, 92, 92)
                 displayBtn.Text = opt .. " +"
-                toggleDrop()
+                dropContent.Visible = false
+                open = false
                 callback(opt)
             end)
         end
@@ -451,7 +447,6 @@ function Library:CreateTab(name)
         dropFrame.Parent = page
         dropFrame.BackgroundTransparency = 1
         dropFrame.Size = UDim2.new(0, 370, 0, 25)
-        dropFrame.ClipsDescendants = false
         dropFrame.ZIndex = 3
 
         local title = Instance.new("TextLabel")
@@ -475,17 +470,16 @@ function Library:CreateTab(name)
         displayBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         displayBtn.TextSize = 12
         displayBtn.AutoButtonColor = false
-        displayBtn.ZIndex = 4
 
         local dropContent = Instance.new("Frame")
         dropContent.Name = "MultiDropContent"
         dropContent.Parent = dropFrame
         dropContent.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
         dropContent.BorderColor3 = Color3.fromRGB(255, 92, 92)
-        dropContent.Position = UDim2.new(0.271, 0, 0, 23)
+        dropContent.Position = UDim2.new(0.271, 0, 0.88, 0)
         dropContent.Size = UDim2.new(0, 180, 0, 0)
         dropContent.Visible = false
-        dropContent.ZIndex = 10
+        dropContent.ZIndex = 4
 
         local dropLayout = Instance.new("UIListLayout")
         dropLayout.Parent = dropContent
@@ -510,7 +504,6 @@ function Library:CreateTab(name)
         displayBtn.MouseButton1Click:Connect(function()
             open = not open
             dropContent.Visible = open
-            dropFrame.ZIndex = open and 15 or 3
             updateDisplayText()
         end)
 
@@ -525,7 +518,7 @@ function Library:CreateTab(name)
             optBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             optBtn.TextSize = 12
             optBtn.AutoButtonColor = false
-            optBtn.ZIndex = 11
+            optBtn.ZIndex = 5
 
             optBtn.MouseButton1Click:Connect(function()
                 selectedMap[opt] = not selectedMap[opt]
@@ -549,7 +542,6 @@ function Library:CreateTab(name)
 
         local h, s, v = defaultColor:ToHSV()
         local a = math.clamp(defaultAlpha, 0, 1)
-        local pickerOpen = false
 
         page.ClipsDescendants = false
 
@@ -563,7 +555,7 @@ function Library:CreateTab(name)
         local title = Instance.new("TextLabel")
         title.Parent = cpContainer
         title.BackgroundTransparency = 1
-        title.Position = UDim2.new(0, 0, 0.08, 0)
+        title.Position = UDim2.new(0, 0, 0, 0)
         title.Size = UDim2.new(0, 101, 0, 20)
         title.Font = Enum.Font.Gotham
         title.Text = label
@@ -577,7 +569,7 @@ function Library:CreateTab(name)
         previewBtn.BackgroundColor3 = defaultColor
         previewBtn.BackgroundTransparency = 1 - a
         previewBtn.BorderColor3 = Color3.fromRGB(255, 92, 92)
-        previewBtn.Position = UDim2.new(0.271, 0, 0.08, 0)
+        previewBtn.Position = UDim2.new(0.271, 0, 0, 0)
         previewBtn.Size = UDim2.new(0, 180, 0, 20)
         previewBtn.Text = ""
         previewBtn.AutoButtonColor = false
@@ -587,12 +579,33 @@ function Library:CreateTab(name)
         ColorPicker.Parent = cpContainer
         ColorPicker.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
         ColorPicker.BorderColor3 = Color3.fromRGB(255, 92, 92)
-        ColorPicker.Position = UDim2.new(0.271, 0, 1.1, 0)
+        ColorPicker.Position = UDim2.new(0.271, 0, 0, 25)
         ColorPicker.Size = UDim2.new(0, 180, 0, 170)
         ColorPicker.Visible = false
         ColorPicker.Text = ""
         ColorPicker.AutoButtonColor = false
         ColorPicker.ZIndex = 20
+
+        local pickerObj = {}
+        pickerObj.Container = cpContainer
+        pickerObj.Popup = ColorPicker
+
+        function pickerObj:Close()
+            ColorPicker.Visible = false
+            cpContainer.Size = UDim2.new(0, 370, 0, 25)
+            if Library.ActiveColorPicker == pickerObj then
+                Library.ActiveColorPicker = nil
+            end
+        end
+
+        function pickerObj:Open()
+            if Library.ActiveColorPicker and Library.ActiveColorPicker ~= pickerObj then
+                Library.ActiveColorPicker:Close()
+            end
+            ColorPicker.Visible = true
+            cpContainer.Size = UDim2.new(0, 370, 0, 200)
+            Library.ActiveColorPicker = pickerObj
+        end
 
         local colorCanvas = Instance.new("ImageButton")
         colorCanvas.Name = "ColorCanvas"
@@ -810,8 +823,11 @@ function Library:CreateTab(name)
         end)
 
         previewBtn.MouseButton1Click:Connect(function()
-            pickerOpen = not pickerOpen
-            ColorPicker.Visible = pickerOpen
+            if ColorPicker.Visible then
+                pickerObj:Close()
+            else
+                pickerObj:Open()
+            end
         end)
 
         updateColor()
@@ -820,5 +836,4 @@ function Library:CreateTab(name)
     table.insert(self.Tabs, TabModule)
     return TabModule
 end
-
 return Library
