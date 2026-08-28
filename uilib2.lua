@@ -592,18 +592,29 @@ function Library:CreateTab(name)
 
         function pickerObj:Close()
             ColorPicker.Visible = false
-            cpContainer.Size = UDim2.new(0, 370, 0, 25)
             if Library.ActiveColorPicker == pickerObj then
                 Library.ActiveColorPicker = nil
             end
         end
-
+        
         function pickerObj:Open()
             if Library.ActiveColorPicker and Library.ActiveColorPicker ~= pickerObj then
                 Library.ActiveColorPicker:Close()
             end
+        
+            -- Reposition using absolute coordinates so UIListLayout ignores it
+            local btnPos = previewBtn.AbsolutePosition
+            local guiPos = self.Main.AbsolutePosition
+        
+            -- Option A: If parented to self.Main, use local offset from Main
+            ColorPicker.Parent = self.Main 
+            ColorPicker.Position = UDim2.new(
+                0, (btnPos.X - guiPos.X), 
+                0, (btnPos.Y - guiPos.Y) + previewBtn.AbsoluteSize.Y + 5
+            )
+            ColorPicker.ZIndex = 100
+        
             ColorPicker.Visible = true
-            cpContainer.Size = UDim2.new(0, 370, 0, 200)
             Library.ActiveColorPicker = pickerObj
         end
 
